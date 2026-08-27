@@ -271,3 +271,12 @@
 - [x] Preservar caixinhas da Sara como saldo/progresso acumulado, sem zerar na troca de mês.
 - [x] Adicionar testes para meses sem aporte, investimentos antigos, perfis e estados vazios.
 - [x] Validar check, testes, build e responsividade sem alterar dados existentes.
+
+## Auditoria — Cartão de crédito
+
+- [x] Revisar a implementação atual de cartões, compras e faturas.
+- [x] Verificar competência mensal, fechamento, vencimento, parcelas, valor da parcela e valor total.
+- [x] Auditar filtros, estados, edição, exportação, perfis e visão Casal.
+- [x] Verificar riscos de duplicidade com lançamentos comuns e contas.
+- [x] Executar check, testes e inspeções sem alterar código ou dados financeiros.
+- [x] Produzir diagnóstico priorizado antes de implementar correções.
