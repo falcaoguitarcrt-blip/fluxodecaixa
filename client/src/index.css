@@ -720,3 +720,58 @@ h2 { margin-bottom: 0; color: #f0f4f5; font-family: 'Playfair Display', serif; f
   background: #e4f4f2;
   color: #124b4a;
 }
+
+
+/* Estados vazios compartilhados: mesma hierarquia visual em todos os módulos. */
+.app-shell .empty-state {
+  min-height: 275px;
+  border: 1px dashed var(--border-soft);
+  border-radius: 14px;
+  background: var(--bg-surface-soft);
+  color: var(--text-primary);
+}
+.app-shell .empty-state h2 {
+  color: var(--text-primary);
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 21px;
+}
+.app-shell .empty-state p {
+  color: var(--text-muted);
+}
+.app-shell .empty-state-icon {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  margin-bottom: 4px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-surface);
+  color: var(--profile-accent, #72b6df);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--bg-app) 22%, transparent);
+}
+.app-shell .empty-state .action-btn {
+  min-height: 40px;
+  margin-top: 8px;
+  border-color: var(--profile-border, #6aaed5);
+  background: var(--profile-accent, #286f9d);
+  color: #ffffff;
+}
+.app-shell .empty-state .action-btn:hover {
+  background: var(--profile-accent-strong, #1d5c83);
+}
+.app-shell .empty-statement-total {
+  border-top: 0;
+  background: var(--bg-surface-soft);
+}
+.app-shell .empty-statement-total h2,
+.app-shell .empty-statement-total p {
+  color: var(--text-primary);
+}
+.app-shell .empty-statement-total p {
+  color: var(--text-muted);
+}
+@media (max-width: 720px) {
+  .app-shell .empty-state { min-height: 240px; padding: 24px 18px; }
+  .app-shell .empty-state .action-btn { width: 100%; max-width: 240px; }
+}

@@ -305,3 +305,12 @@
 - [x] Aplicar a cor distinta no badge superior, botão registrar, ativo da sidebar e indicador inferior.
 - [x] Garantir que Felipe permaneça azul e Sara permaneça roxo/magenta.
 - [x] Validar contraste, responsividade, testes e build.
+
+## Estados vazios reutilizáveis
+
+- [x] Auditar os estados sem dados de Contas, Cartão, Investimentos e Lançamentos.
+- [x] Criar componente reutilizável com ícone, título, apoio e ação primária interna.
+- [x] Aplicar o componente a Contas, Cartão de crédito, Investimentos e Lançamentos.
+- [x] Adaptar a área de fatura quando não houver cartão cadastrado.
+- [x] Adicionar testes de presença, rótulo e callback das ações vazias.
+- [x] Validar os dois temas, desktop/mobile, check, testes e build.
