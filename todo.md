@@ -359,3 +359,10 @@
 - [x] Atualizar testes automatizados de tokens e contraste.
 - [x] Validar as quatro abas em modo claro e capturar prints para conferência.
 - [x] Salvar checkpoint final da correção.
+
+## Contraste do alerta de vencimentos na sidebar
+
+- [x] Auditar os tokens e estados do card “Nenhum vencimento crítico”.
+- [x] Ajustar contraste de superfície, título, detalhe e ícone nos modos claro e escuro.
+- [x] Adicionar teste automatizado de contraste WCAG AA para o componente.
+- [x] Validar visualmente a sidebar nos dois temas e salvar checkpoint.

@@ -74,6 +74,22 @@ describe("theme contrast tokens", () => {
     expect(contrastRatio(token(foreground, light), token(background, light))).toBeGreaterThanOrEqual(4.5);
   });
 
+  it.each([
+    ["status-title", "status-bg"],
+    ["status-detail", "status-bg"],
+    ["status-icon", "status-bg"],
+  ])("keeps the sidebar status %s over %s at WCAG AA in dark mode", (foreground, background) => {
+    expect(contrastRatio(token(foreground, dark), token(background, dark))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each([
+    ["status-title", "status-bg"],
+    ["status-detail", "status-bg"],
+    ["status-icon", "status-bg"],
+  ])("keeps the sidebar status %s over %s at WCAG AA in light mode", (foreground, background) => {
+    expect(contrastRatio(token(foreground, light), token(background, light))).toBeGreaterThanOrEqual(4.5);
+  });
+
   it("declares semantic classes for chart, financial values and controls", () => {
     for (const selector of [".chart-income-dot", ".chart-expense-dot", ".transaction-amount-income", ".transaction-amount-expense", ".expense-value", ".routine-overdue-title", ".filter-icon", ".period-control-icon", ".sidebar-tip-icon"]) {
       expect(css).toContain(selector);

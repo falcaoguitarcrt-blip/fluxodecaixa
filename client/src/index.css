@@ -367,6 +367,11 @@ h2 { margin-bottom: 0; color: #f0f4f5; font-family: 'Playfair Display', serif; f
   --color-warning: #e7d28d;
   --color-link: #b7dbed;
   --color-icon-muted: #aebdc8;
+  --status-bg: #243442;
+  --status-border: #668294;
+  --status-title: #f5f7f8;
+  --status-detail: #c5d0d8;
+  --status-icon: #d8d18d;
   background-color: var(--bg-app);
   color: var(--text-primary);
 }
@@ -396,6 +401,11 @@ h2 { margin-bottom: 0; color: #f0f4f5; font-family: 'Playfair Display', serif; f
   --color-warning: #765300;
   --color-link: #155f88;
   --color-icon-muted: #4c6374;
+  --status-bg: #dce8ee;
+  --status-border: #6b8798;
+  --status-title: #172538;
+  --status-detail: #30495b;
+  --status-icon: #5a4f00;
   filter: none;
   background-color: var(--bg-app);
   color: var(--text-primary);
@@ -424,10 +434,12 @@ h2 { margin-bottom: 0; color: #f0f4f5; font-family: 'Playfair Display', serif; f
   box-shadow: none;
 }
 .app-shell .sidebar-tip {
-  border-color: var(--border-soft);
-  background: var(--bg-surface-soft);
+  border-color: var(--status-border);
+  background: var(--status-bg);
 }
-.app-shell .sidebar-tip span { color: var(--text-muted); }
+.app-shell .sidebar-tip strong { color: var(--status-title); }
+.app-shell .sidebar-tip span { color: var(--status-detail); }
+.app-shell .sidebar-tip-icon { color: var(--status-icon); }
 .app-shell .profile-switch button.active {
   border-color: var(--border);
   background: var(--sidebar-active);
