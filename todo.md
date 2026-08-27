@@ -297,3 +297,11 @@
 - [x] Garantir que o perfil Casal some Felipe e Sara no mês selecionado, sem fallback zero indevido.
 - [x] Adicionar teste automatizado de equivalência dos KPIs entre Visão Geral e aba Casal.
 - [x] Executar check, testes, build e validação visual desktop/mobile.
+
+## Identidade cromática distinta do perfil Casal
+
+- [x] Auditar os seletores atuais de perfil no cabeçalho, sidebar, registro e avatar.
+- [x] Definir tokens teal/dourados para Casal em modo claro e escuro.
+- [x] Aplicar a cor distinta no badge superior, botão registrar, ativo da sidebar e indicador inferior.
+- [x] Garantir que Felipe permaneça azul e Sara permaneça roxo/magenta.
+- [x] Validar contraste, responsividade, testes e build.

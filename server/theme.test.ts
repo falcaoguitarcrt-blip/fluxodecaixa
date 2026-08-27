@@ -55,6 +55,15 @@ describe("theme contrast tokens", () => {
     expect(contrastRatio(token(foreground, light), token(background, light))).toBeGreaterThanOrEqual(4.5);
   });
 
+  it("defines distinct profile accents for Felipe, Sara and Casal", () => {
+    expect(css).toContain(".app-shell.profile-felipe");
+    expect(css).toContain(".app-shell.profile-sara");
+    expect(css).toContain(".app-shell.profile-casal");
+    expect(css).toContain("#16847d");
+    expect(css).toContain(".profile-switch-casal");
+    expect(css).toContain("button.profile-casal.active");
+  });
+
   it("declares semantic overrides for the requested financial surfaces", () => {
     for (const selector of [".sidebar", ".assistant-card", ".word-day-card", ".transaction-list", ".table-panel", ".card-statement"]) {
       expect(css).toContain(`.app-shell ${selector}`);

@@ -638,3 +638,85 @@ h2 { margin-bottom: 0; color: #f0f4f5; font-family: 'Playfair Display', serif; f
 .app-shell.light-mode .text-slate-400,
 .app-shell.light-mode .text-slate-500 { color: var(--text-secondary); }
 .app-shell.light-mode .governance-panel { background: var(--bg-surface); }
+
+
+/* Identidade cromática distinta para a visão Casal. Felipe e Sara mantêm suas
+   cores individuais; Casal usa teal para comunicar consolidação sem parecer
+   uma variação do roxo da Sara. */
+.app-shell.profile-casal {
+  --profile-accent: #16847d;
+  --profile-accent-strong: #0d625e;
+  --profile-accent-soft: rgba(22, 132, 125, .22);
+  --profile-border: #54bdb6;
+  --profile-sidebar-active: #194b4b;
+}
+.app-shell.profile-casal .profile-pills button.profile-casal span {
+  background: linear-gradient(135deg, #1da39a 0 50%, #116c69 50%);
+  color: #f4ffff;
+  font-size: 7px;
+}
+.app-shell.profile-casal .profile-pills button.profile-casal.active {
+  border-color: var(--profile-border);
+  background: var(--profile-accent-soft);
+  color: var(--text-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--profile-border) 38%, transparent);
+}
+.app-shell.profile-casal .action-btn:not(.action-ghost) {
+  border-color: #63cbc3;
+  background: linear-gradient(180deg, #219f98, #14746f);
+  box-shadow: 0 8px 18px rgba(11, 104, 99, .28), inset 0 1px 0 rgba(255, 255, 255, .18);
+}
+.app-shell.profile-casal .action-btn:not(.action-ghost):hover {
+  background: linear-gradient(180deg, #2bb3aa, #16817b);
+  box-shadow: 0 10px 25px rgba(11, 104, 99, .36), inset 0 1px 0 rgba(255, 255, 255, .2);
+}
+.app-shell.profile-casal .desktop-nav button.active {
+  border-color: var(--profile-border);
+  background: var(--profile-sidebar-active);
+  color: #effffc;
+  box-shadow: inset 3px 0 0 #63cbc3;
+}
+.app-shell.profile-casal .profile-switch {
+  border-left: 3px solid var(--profile-border);
+  padding-left: 7px;
+}
+.app-shell.profile-felipe .profile-switch button.active {
+  border-left: 3px solid #66afe0;
+  padding-left: 4px;
+}
+.app-shell.profile-sara .profile-switch button.active {
+  border-left: 3px solid #c697da;
+  padding-left: 4px;
+}
+.app-shell.light-mode.profile-casal .sidebar {
+  border-right-color: #9fc9c6;
+  background: var(--sidebar-bg);
+}
+.app-shell.light-mode.profile-casal .desktop-nav button.active {
+  border-color: #8bc8c3;
+  background: #d9efed;
+  color: #124b4a;
+  box-shadow: inset 3px 0 0 #16847d;
+}
+.app-shell.light-mode.profile-casal .profile-pills button.profile-casal.active {
+  border-color: #86c4c0;
+  background: #d9efed;
+  color: #124b4a;
+}
+.app-shell.light-mode.profile-casal .profile-switch {
+  border-left-color: #16847d;
+}
+.app-shell.profile-casal .profile-switch-casal button {
+  border-color: color-mix(in srgb, var(--profile-border) 42%, transparent);
+  background: color-mix(in srgb, var(--profile-accent) 10%, transparent);
+  color: var(--text-primary);
+}
+.app-shell.profile-casal .profile-switch-casal button .avatar-blue,
+.app-shell.profile-casal .profile-switch-casal button .avatar-purple {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--profile-border) 38%, transparent);
+}
+.app-shell.light-mode.profile-casal .profile-switch-casal button {
+  border-color: #9fc9c6;
+  background: #e4f4f2;
+  color: #124b4a;
+}
