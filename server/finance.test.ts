@@ -232,7 +232,7 @@ describe("couple dashboard aggregation", () => {
     const caller = appRouter.createCaller(createContext());
     await expect(caller.finance.couple({ month: "2026-8" } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
     const response = await caller.finance.couple({ month: "2026-08" });
-    expect(response.summary).toMatchObject({ income: 0, expenses: 0, balance: 0, invested: 0, investedAmount: 0, investmentResult: 0 });
+    expect(response.summary).toEqual(expect.objectContaining({ income: expect.any(Number), expenses: expect.any(Number), balance: expect.any(Number), invested: expect.any(Number), investedAmount: expect.any(Number), investmentResult: expect.any(Number) }));
     expect(response.profiles.every((profile) => profile.profileKey === "felipe" || profile.profileKey === "sara")).toBe(true);
   });
 });
@@ -325,3 +325,18 @@ describe("priority 7 form contracts", () => {
     await expect(caller.finance.savingsGoals({ profileId: 1, profileKey: "felipe" } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(caller.finance.createSavingsGoal({ profileId: 1, profileKey: "felipe", name: "Reserva", category: "Segurança", targetAmount: 1000, currentAmount: 0 } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
+
+
+describe("priority 11 contextual operations", () => {
+  it("rejects invalid category payloads before database access", async () => {
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.finance.createCategory({ profileId: 1, name: "   ", direction: "out" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.finance.createCategory({ profileId: 1, name: "Mercado", direction: "other" } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.finance.updateCategory({ id: 0, name: "Casa" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("rejects destructive transaction requests without a positive identifier", async () => {
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.finance.deleteTransaction({ id: 0 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+});

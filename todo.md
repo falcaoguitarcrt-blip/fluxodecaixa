@@ -202,3 +202,15 @@
 
 - [x] Centralizar no backend o detalhamento de faturas por cartão, com valor da parcela, valor total, quantidade de compras, vencimento derivado e estado da fatura.
 - [x] Usar o detalhamento de faturas no resumo protegido e cobrir o cálculo com testes Vitest.
+
+## Prioridade 11 — operações contextuais e fluxos separados
+
+- [x] Adicionar menu contextual por botão direito nos lançamentos, com editar, excluir e fechar ao clicar fora ou pressionar Escape.
+- [x] Implementar exclusão de lançamento dentro do fluxo de edição, com confirmação e envio para a lixeira/auditoria.
+- [x] Garantir que edição e exclusão respeitem o usuário e o perfil financeiro ativos por meio dos procedimentos protegidos existentes.
+- [x] Criar configuração persistente de categorias de entrada e saída, com adicionar, renomear, arquivar e exclusão protegida quando houver uso.
+- [x] Usar as categorias configuradas no formulário de lançamentos, filtros e listas sem perder categorias históricas.
+- [x] Separar claramente os fluxos de lançamento comum, investimento, cartão e conta na página principal, com ações rápidas e feedback próprios.
+- [x] Corrigir o fluxo de investimentos para salvar e atualizar os dados sem convertê-los em lançamento comum, usando o formulário e procedimento próprios.
+- [x] Garantir atualização das consultas, cálculos e auditoria após cada operação.
+- [x] Adicionar testes para contratos de exclusão e categorias, além das barreiras de perfil; validar check, 34 testes, build e responsividade. A interação de botão direito permanece validada visualmente e deve ser conferida manualmente pelo usuário.

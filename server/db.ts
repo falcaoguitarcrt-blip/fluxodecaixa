@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, bills, cardPurchases, creditCards, financeProfiles, investments, transactions, trashItems, recurringRules, budgets, reminders, financeAuditLogs, financeBackups, savingsGoals } from "../drizzle/schema";
+import { InsertUser, users, bills, cardPurchases, creditCards, financeProfiles, investments, transactions, trashItems, recurringRules, budgets, reminders, financeAuditLogs, financeBackups, savingsGoals, financeCategories } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import type { CsvTransaction } from "../shared/financeCsv";
 
@@ -150,7 +150,7 @@ export async function ensureFinanceProfiles(userId: number) {
 
 export async function listFinanceData(userId: number, profileId?: number) {
   const db = await getDb();
-  if (!db) return { profiles: [], transactions: [], bills: [], investments: [], cards: [], purchases: [], trash: [], recurring: [], budgets: [], reminders: [], savingsGoals: [] };
+  if (!db) return { profiles: [], transactions: [], bills: [], investments: [], cards: [], purchases: [], trash: [], recurring: [], budgets: [], reminders: [], savingsGoals: [], categories: [] };
   const profiles = await ensureFinanceProfiles(userId);
   const txWhere = profileId ? and(eq(transactions.userId, userId), eq(transactions.profileId, profileId)) : eq(transactions.userId, userId);
   const billWhere = profileId ? and(eq(bills.userId, userId), eq(bills.profileId, profileId)) : eq(bills.userId, userId);
@@ -161,7 +161,8 @@ export async function listFinanceData(userId: number, profileId?: number) {
   const budgetWhere = profileId ? and(eq(budgets.userId, userId), eq(budgets.profileId, profileId)) : eq(budgets.userId, userId);
   const reminderWhere = profileId ? and(eq(reminders.userId, userId), eq(reminders.profileId, profileId)) : eq(reminders.userId, userId);
   const savingsGoalWhere = profileId ? and(eq(savingsGoals.userId, userId), eq(savingsGoals.profileId, profileId)) : eq(savingsGoals.userId, userId);
-  const [tx, billRows, investmentRows, cardRows, purchaseRows, trashRows, recurringRows, budgetRows, reminderRows, savingsGoalRows] = await Promise.all([
+  const categoryWhere = profileId ? and(eq(financeCategories.userId, userId), eq(financeCategories.profileId, profileId)) : eq(financeCategories.userId, userId);
+  const [tx, billRows, investmentRows, cardRows, purchaseRows, trashRows, recurringRows, budgetRows, reminderRows, savingsGoalRows, categoryRows] = await Promise.all([
     db.select().from(transactions).where(txWhere).orderBy(desc(transactions.date)),
     db.select().from(bills).where(billWhere).orderBy(desc(bills.dueDate)),
     db.select().from(investments).where(investmentWhere).orderBy(desc(investments.investedAt)),
@@ -172,8 +173,9 @@ export async function listFinanceData(userId: number, profileId?: number) {
     db.select().from(budgets).where(budgetWhere).orderBy(desc(budgets.createdAt)),
     db.select().from(reminders).where(reminderWhere).orderBy(desc(reminders.dueDate)),
     db.select().from(savingsGoals).where(savingsGoalWhere).orderBy(desc(savingsGoals.createdAt)),
+    db.select().from(financeCategories).where(categoryWhere).orderBy(desc(financeCategories.createdAt)),
   ]);
-  return { profiles, transactions: tx, bills: billRows, investments: investmentRows, cards: cardRows, purchases: purchaseRows, trash: trashRows, recurring: recurringRows, budgets: budgetRows, reminders: reminderRows, savingsGoals: savingsGoalRows };
+  return { profiles, transactions: tx, bills: billRows, investments: investmentRows, cards: cardRows, purchases: purchaseRows, trash: trashRows, recurring: recurringRows, budgets: budgetRows, reminders: reminderRows, savingsGoals: savingsGoalRows, categories: categoryRows };
 }
 
 export async function createTransaction(input: typeof transactions.$inferInsert) {
@@ -265,6 +267,61 @@ export async function deleteSavingsGoal(userId: number, id: number) {
   await assertSaraProfile(userId, current[0].profileId);
   await db.delete(savingsGoals).where(and(eq(savingsGoals.id, id), eq(savingsGoals.userId, userId)));
   await recordFinanceAudit({ userId, profileId: current[0].profileId, action: "delete", entityType: "savings_goal", entityId: id, summary: current[0].name });
+  return true;
+}
+
+export async function listFinanceCategories(userId: number, profileId: number) {
+  const db = await assertFinanceProfile(userId, profileId);
+  return db.select().from(financeCategories).where(and(eq(financeCategories.userId, userId), eq(financeCategories.profileId, profileId))).orderBy(desc(financeCategories.createdAt));
+}
+
+export async function createFinanceCategory(userId: number, input: Omit<typeof financeCategories.$inferInsert, "userId">) {
+  const db = await assertFinanceProfile(userId, input.profileId);
+  const name = input.name.trim();
+  const duplicate = await db.select({ id: financeCategories.id }).from(financeCategories).where(and(eq(financeCategories.userId, userId), eq(financeCategories.profileId, input.profileId), eq(financeCategories.direction, input.direction), eq(financeCategories.name, name), eq(financeCategories.status, "active"))).limit(1);
+  if (duplicate[0]) throw new Error("Essa categoria já existe para este fluxo");
+  const result = await db.insert(financeCategories).values({ ...input, userId, name });
+  const id = Number(result[0]?.insertId ?? 0);
+  await recordFinanceAudit({ userId, profileId: input.profileId, action: "create", entityType: "category", entityId: id, summary: `${input.direction === "in" ? "Entrada" : "Saída"}: ${name}` });
+  return id;
+}
+
+export async function updateFinanceCategory(userId: number, id: number, input: { name?: string }) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const current = await db.select().from(financeCategories).where(and(eq(financeCategories.id, id), eq(financeCategories.userId, userId))).limit(1);
+  if (!current[0]) throw new Error("Categoria não encontrada");
+  await assertFinanceProfile(userId, current[0].profileId);
+  const name = input.name?.trim();
+  if (name) {
+    const duplicate = await db.select({ id: financeCategories.id }).from(financeCategories).where(and(eq(financeCategories.userId, userId), eq(financeCategories.profileId, current[0].profileId), eq(financeCategories.direction, current[0].direction), eq(financeCategories.name, name), eq(financeCategories.status, "active"))).limit(1);
+    if (duplicate[0] && duplicate[0].id !== id) throw new Error("Essa categoria já existe para este fluxo");
+    await db.update(financeCategories).set({ name }).where(and(eq(financeCategories.id, id), eq(financeCategories.userId, userId)));
+  }
+  const updated = await db.select().from(financeCategories).where(and(eq(financeCategories.id, id), eq(financeCategories.userId, userId))).limit(1);
+  if (updated[0]) await recordFinanceAudit({ userId, profileId: updated[0].profileId, action: "update", entityType: "category", entityId: id, summary: updated[0].name });
+  return updated;
+}
+
+export async function archiveFinanceCategory(userId: number, id: number) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const current = await db.select().from(financeCategories).where(and(eq(financeCategories.id, id), eq(financeCategories.userId, userId))).limit(1);
+  if (!current[0]) throw new Error("Categoria não encontrada");
+  await assertFinanceProfile(userId, current[0].profileId);
+  await db.update(financeCategories).set({ status: "archived" }).where(and(eq(financeCategories.id, id), eq(financeCategories.userId, userId)));
+  await recordFinanceAudit({ userId, profileId: current[0].profileId, action: "archive", entityType: "category", entityId: id, summary: current[0].name });
+  return true;
+}
+
+export async function deleteFinanceCategory(userId: number, id: number) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const current = await db.select().from(financeCategories).where(and(eq(financeCategories.id, id), eq(financeCategories.userId, userId))).limit(1);
+  if (!current[0]) throw new Error("Categoria não encontrada");
+  await assertFinanceProfile(userId, current[0].profileId);
+  const usedInTransactions = await db.select({ id: transactions.id }).from(transactions).where(and(eq(transactions.userId, userId), eq(transactions.profileId, current[0].profileId), eq(transactions.category, current[0].name))).limit(1);
+  const usedInPurchases = await db.select({ id: cardPurchases.id }).from(cardPurchases).where(and(eq(cardPurchases.userId, userId), eq(cardPurchases.profileId, current[0].profileId), eq(cardPurchases.category, current[0].name))).limit(1);
+  if (usedInTransactions[0] || usedInPurchases[0]) throw new Error("Categoria já utilizada; arquive-a para preservar o histórico");
+  await db.delete(financeCategories).where(and(eq(financeCategories.id, id), eq(financeCategories.userId, userId)));
+  await recordFinanceAudit({ userId, profileId: current[0].profileId, action: "delete", entityType: "category", entityId: id, summary: current[0].name });
   return true;
 }
 

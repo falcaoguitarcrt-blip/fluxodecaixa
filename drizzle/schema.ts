@@ -40,6 +40,17 @@ export const transactions = mysqlTable("transactions", {
   createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({ ownerDateIdx: index("transactions_owner_date_idx").on(table.userId, table.date), profileIdx: index("transactions_profile_idx").on(table.profileId) }));
 
+export const financeCategories = mysqlTable("finance_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  profileId: int("profileId").notNull(),
+  name: varchar("name", { length: 80 }).notNull(),
+  direction: mysqlEnum("direction", ["in", "out"]).notNull(),
+  status: mysqlEnum("status", ["active", "archived"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({ ownerProfileIdx: index("finance_categories_owner_profile_idx").on(table.userId, table.profileId, table.direction, table.status) }));
+
 export const bills = mysqlTable("bills", {
   id: int("id").autoincrement().primaryKey(), userId: int("userId").notNull(), profileId: int("profileId").notNull(), description: varchar("description", { length: 180 }).notNull(), dueDate: timestamp("dueDate").notNull(), amount: decimal("amount", { precision: 12, scale: 2 }).notNull(), responsible: varchar("responsible", { length: 80 }).notNull(),
   status: mysqlEnum("status", ["pending", "paid", "late"]).default("pending").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
