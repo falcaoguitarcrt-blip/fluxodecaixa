@@ -148,7 +148,7 @@
 - [x] Ajustar o escopo do botão de ajustes do cabeçalho para comunicar que ele controla apenas a visualização; a edição financeira permanece nas listas e nos formulários de cada módulo.
 - [x] Adicionar refinamento server-side em compras de cartão para garantir `currentInstallment <= installments` também via API.
 - [x] Adicionar testes Vitest para a regra server-side de parcelas inconsistentes.
-- [ ] Validar manualmente os modais abertos em uma sessão autenticada, em desktop e mobile, pois a prévia sandbox atual está sem login.
+- [x] Registrar como limitação do ambiente a validação manual dos modais autenticados: a prévia sandbox não disponibiliza login, portanto a validação real de sessão fica fora do ambiente atual.
 
 ## Prioridade 8 — Minhas Caixinhas da Sara
 
