@@ -114,3 +114,18 @@
 - [x] Adicionar seletor de arquivo JSON e confirmação antes da restauração.
 - [x] Registrar a restauração no histórico e reportar lançamentos criados e duplicados.
 - [x] Testar payload inválido e isolamento no contrato protegido; restauração válida contra banco real permanece como verificação manual.
+
+## Prioridade 6 — identidade visual e complementos preferidos
+
+- [x] Recuperar títulos contextuais grandes e subtítulos específicos por módulo.
+- [x] Adicionar cabeçalho contextual com seletor de mês funcional, seletor de perfil, painel de edição rápida, indicador estático de moeda, tema e registro.
+- [x] Aplicar identidade cromática consistente: azul para Felipe, roxo para Sara e visual combinado para Casal.
+- [x] Reintroduzir na visão geral os cartões de saldo do mês, entradas, saídas e comprometimento percentual.
+- [x] Adicionar bloco editorial "Palavra do dia" com Salmo e ilustração visual construída em CSS.
+- [x] Reforçar Contas com resumo de vencimentos, pendentes, pagas e atrasadas, lista ampla, estado vazio visual e alerta lateral dinâmico de vencimento.
+- [x] Adicionar seção visual condicional de "Minhas Caixinhas" para Sara, com estado vazio honesto, métricas zeradas e botão de adicionar; o cadastro persistente dos objetivos fica reservado para a próxima prioridade funcional.
+- [x] Preservar e reforçar os cards de investimentos: total investido, valor de mercado, resultado, atualização, saldo por instituição e tabela detalhada.
+- [x] Reforçar Cartões com faturas por cartão/mês/vencimento/valor, cards individuais, filtros, alternância parcela/valor total e exportação CSV real das compras filtradas.
+- [x] Tornar o Resumo do Casal visualmente equivalente à referência, com saldo, entradas, saídas, comprometimento e cards de contas/investimentos/faturas; os resumos usam os perfis persistidos quando autenticados.
+- [x] Reforçar o botão de tema claro/escuro no cabeçalho em todos os módulos, com persistência da preferência.
+- [x] Validar responsividade desktop/mobile, check, 20 testes automatizados, build e ausência de regressões conhecidas nos fluxos persistentes. A validação com dados autenticados reais permanece manual.
