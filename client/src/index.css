@@ -125,6 +125,11 @@ h2 { margin-bottom: 0; color: #f0f4f5; font-family: 'Playfair Display', serif; f
 .stat-mint { border-top-color: rgba(110, 190, 155, .64); }
 .stat-clay { border-top-color: rgba(210, 148, 129, .62); }
 .stat-gold { border-top-color: rgba(214, 180, 95, .64); }
+.stats-grid.has-overdue .stat-urgent { order: -1; }
+.stat-card.stat-urgent { border-color: var(--alert-border); background: var(--alert-bg); box-shadow: 0 14px 30px color-mix(in srgb, var(--alert-border) 18%, transparent); }
+.stat-card.stat-urgent .eyebrow, .stat-card.stat-urgent .stat-detail { color: var(--alert-text); }
+.stat-icon-urgent { color: var(--alert-icon); fill: currentColor; transform-origin: top center; animation: overdue-bell-pulse 2.8s ease-in-out infinite; }
+@keyframes overdue-bell-pulse { 0%, 72%, 100% { transform: rotate(0deg); } 76% { transform: rotate(8deg); } 79% { transform: rotate(-7deg); } 82% { transform: rotate(4deg); } 85% { transform: rotate(0deg); } }
 .content-grid { display: grid; grid-template-columns: minmax(0,1.32fr) minmax(270px,.88fr); gap: 14px; margin-top: 14px; }
 .panel { padding: 22px; }
 .chart-panel { grid-row: span 2; min-height: 352px; }
@@ -353,6 +358,10 @@ h2 { margin-bottom: 0; color: #f0f4f5; font-family: 'Playfair Display', serif; f
   --sidebar-border: #52748b;
   --sidebar-active: #244f72;
   --sidebar-hover: #1d405d;
+  --alert-bg: #3a211f;
+  --alert-border: #e47461;
+  --alert-text: #ffd5cc;
+  --alert-icon: #ff9886;
   background-color: var(--bg-app);
   color: var(--text-primary);
 }
@@ -373,6 +382,10 @@ h2 { margin-bottom: 0; color: #f0f4f5; font-family: 'Playfair Display', serif; f
   --sidebar-border: #a9bcc8;
   --sidebar-active: #d9eaf4;
   --sidebar-hover: #e9f2f6;
+  --alert-bg: #fff1ee;
+  --alert-border: #c84432;
+  --alert-text: #8c2419;
+  --alert-icon: #a92f20;
   filter: none;
   background-color: var(--bg-app);
   color: var(--text-primary);
@@ -452,6 +465,9 @@ h2 { margin-bottom: 0; color: #f0f4f5; font-family: 'Playfair Display', serif; f
   background: repeating-linear-gradient(to bottom, transparent 0, transparent 55px, color-mix(in srgb, var(--border) 35%, transparent) 56px);
 }
 .app-shell .commitment-track { background: color-mix(in srgb, var(--border) 35%, transparent); }
+.app-shell .stat-card.stat-urgent { border-color: var(--alert-border); background: var(--alert-bg); box-shadow: 0 14px 30px color-mix(in srgb, var(--alert-border) 18%, transparent); }
+.app-shell.light-mode .stat-card.stat-urgent { background: var(--alert-bg); }
+.app-shell.light-mode .stat-card.stat-urgent .stat-value { color: var(--alert-text); }
 .app-shell .trend-pill { color: #216d51; background: #d8f1e6; }
 .app-shell:not(.light-mode) .trend-pill { color: #b9ead0; background: #24483d; }
 .app-shell .inline-link { color: #236b95; }

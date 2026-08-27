@@ -322,3 +322,12 @@
 - [x] Exibir aviso discreto abaixo de Resultado acumulado sem mascarar o cálculo.
 - [x] Adicionar testes para mercado desatualizado, ativo normal e múltiplos ativos.
 - [x] Validar temas, responsividade, check, testes e build.
+
+## Alerta visual de contas atrasadas
+
+- [x] Auditar a composição atual dos cards de Contas e a ordem da grade.
+- [x] Aplicar estado de alerta condicional somente quando houver contas atrasadas.
+- [x] Destacar o sino com tratamento sutil e preservar contraste nos dois temas.
+- [x] Priorizar Atrasadas na primeira posição quando o total for maior que zero.
+- [x] Adicionar testes de estado, ordem e neutralidade quando o total for zero.
+- [x] Validar responsividade, check, testes e build.
