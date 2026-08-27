@@ -366,3 +366,19 @@
 - [x] Ajustar contraste de superfície, título, detalhe e ícone nos modos claro e escuro.
 - [x] Adicionar teste automatizado de contraste WCAG AA para o componente.
 - [x] Validar visualmente a sidebar nos dois temas e salvar checkpoint.
+
+## Proteção contra perda de dados e sincronização GitHub
+
+- [ ] Inspecionar o conector/configuração GitHub e o repositório remoto associado.
+- [ ] Confirmar nome, proprietário, branch e estado de sincronização do repositório real.
+- [ ] Registrar protocolo obrigatório de pré-commit e pós-commit para mudanças estruturais.
+- [ ] Documentar a exigência de confirmação explícita antes de exclusões ou ações potencialmente irreversíveis.
+- [ ] Entregar ressalvas caso o vínculo GitHub não esteja ativo ou o nome informado seja apenas um marcador.
+
+## Backup inicial no GitHub
+
+- [ ] Criar o repositório privado `felipesilva/fluxo-pessoal`.
+- [ ] Configurar o remote Git local para o repositório GitHub privado.
+- [ ] Fazer o primeiro commit de backup sem apagar arquivos ou dados.
+- [ ] Enviar o commit para a branch principal e verificar sincronização.
+- [ ] Registrar o protocolo permanente de pré-commit e pós-commit.
