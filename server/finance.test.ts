@@ -59,7 +59,7 @@ describe("finance procedures", () => {
   });
 });
 
-import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, resolveBillStatus, buildBillAlertSummary, dedupeTransactionRows, restoreFinanceSnapshot, calculateSavingsGoalProgress, assertSavingsGoalProfile, assertSavingsGoalAccess, buildCoupleDashboard, buildCoupleDashboardForUser } from "./db";
+import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, resolveBillStatus, buildBillAlertSummary, dedupeTransactionRows, restoreFinanceSnapshot, calculateSavingsGoalProgress, assertSavingsGoalProfile, assertSavingsGoalAccess, buildCoupleDashboard, buildCoupleDashboardForUser, buildCardStatementDetails } from "./db";
 import { parseFinanceCsv, serializeFinanceCsv } from "../shared/financeCsv";
 
 describe("finance calculations", () => {
@@ -190,6 +190,18 @@ describe("finance filters", () => {
   it("returns created and skipped counts for a valid CSV import", async () => {
     const caller = appRouter.createCaller(createContext());
     await expect(caller.finance.importTransactions({ profileId: 1, rows: [{ date: "2026-08-21", description: "Mercado", category: "Casa", bank: "Inter", direction: "out", amount: 35.5 }] })).resolves.toEqual({ created: 2, skipped: 1 });
+  });
+});
+
+describe("card statement details", () => {
+  it("derives the statement month, due date, totals and status per card", () => {
+    const details = buildCardStatementDetails([
+      { id: 1, name: "Inter", brand: "Visa", dueDay: 20, closingDay: 13 },
+      { id: 2, name: "Nubank", brand: "Mastercard", dueDay: 10, closingDay: 3 },
+    ], [{ cardId: 1, totalAmount: "120.00", installmentAmount: "40.00" }], "2026-08");
+    expect(details[0]).toMatchObject({ cardId: 1, statementMonth: "2026-08", purchaseCount: 1, installmentAmount: 40, totalAmount: 120, status: "open" });
+    expect(details[0]?.dueDate.toISOString().slice(0, 10)).toBe("2026-09-20");
+    expect(details[1]).toMatchObject({ cardId: 2, purchaseCount: 0, installmentAmount: 0, totalAmount: 0, status: "empty" });
   });
 });
 

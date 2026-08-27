@@ -186,3 +186,19 @@
 
 - [x] Expor no consolidado o valor efetivamente investido e o resultado agregado de investimentos, calculado como valor de mercado menos valor investido.
 - [x] Adicionar teste do procedimento tRPC da visão Casal para mês inválido/estado vazio, além de cobertura do filtro de usuário e da consolidação somente de Felipe/Sara; a validação com dados reais de múltiplos usuários permanece manual autenticada.
+
+## Prioridade 10 — cartões detalhados e faturas
+
+- [x] Revisar os dados persistidos de cartões e compras para definir fatura, vencimento, fechamento e estado sem valores fictícios; compras sem registro aparecem como sem compras, e não como uma fatura paga inventada.
+- [x] Criar agregação detalhada por cartão com compras internas, parcela do mês, valor total, vencimento e estado.
+- [x] Expor ou ajustar contratos protegidos para consulta detalhada por mês, cartão e categoria; o resumo protegido inclui os dados derivados de cada fatura.
+- [x] Reforçar a interface com cards individuais de cartão, marca, fatura, compras internas, vencimento e estado.
+- [x] Adicionar filtros reais por mês, cartão e categoria, preservando a alternância entre parcela do mês e valor total.
+- [x] Permitir editar cartão e compra a partir dos detalhes, com atualização das consultas e auditoria.
+- [x] Manter exportação CSV das compras filtradas e estados vazios honestos.
+- [x] Cobrir agregações, estados, filtros e contratos com 32 testes Vitest; executar check, testes, build e revisão responsiva.
+
+## Refinamento de fechamento da Prioridade 10
+
+- [x] Centralizar no backend o detalhamento de faturas por cartão, com valor da parcela, valor total, quantidade de compras, vencimento derivado e estado da fatura.
+- [x] Usar o detalhamento de faturas no resumo protegido e cobrir o cálculo com testes Vitest.

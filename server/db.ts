@@ -431,10 +431,11 @@ export async function getFinanceDashboard(userId: number, filters: FinanceFilter
   const cardInstallments = cardMonth.reduce((sum, item) => sum + Number(item.installmentAmount), 0);
   const cardTotal = cardMonth.reduce((sum, item) => sum + Number(item.totalAmount), 0);
   const cardsSummary = buildCardsSummary(data.cards, cardMonth);
+  const cardStatements = buildCardStatementDetails(data.cards, cardMonth, filters.month ?? new Date().toISOString().slice(0, 7));
   const billsPending = filterBills(data.bills, { month: filters.month }).filter((item) => item.status !== "paid").reduce((sum, item) => sum + Number(item.amount), 0);
   const balance = totals.income - totals.expenses;
   const series = buildFinanceSeries(filteredTransactions);
-  return { ...data, transactions: filteredTransactions, investments: filteredInvestments, purchases: cardMonth, summary: { income: totals.income, expenses: totals.expenses, balance, invested, billsPending, cardInstallments, cardTotal, cardsSummary, commitment: calculateCommitment(totals.income, totals.expenses, billsPending, cardInstallments), series } };
+  return { ...data, transactions: filteredTransactions, investments: filteredInvestments, purchases: cardMonth, summary: { income: totals.income, expenses: totals.expenses, balance, invested, billsPending, cardInstallments, cardTotal, cardsSummary, cardStatements, commitment: calculateCommitment(totals.income, totals.expenses, billsPending, cardInstallments), series } };
 }
 
 export function buildFinanceSeries(rows: Array<{ date: Date; direction: "in" | "out"; amount: string | number }>) {
@@ -445,6 +446,31 @@ export function buildFinanceSeries(rows: Array<{ date: Date; direction: "in" | "
 
 export function buildCardsSummary(cards: Array<{ id: number; name: string }>, purchases: Array<{ cardId: number; totalAmount: string | number; installmentAmount: string | number }>) {
   return cards.map((card) => ({ cardId: card.id, name: card.name, installmentAmount: purchases.filter((item) => item.cardId === card.id).reduce((sum, item) => sum + Number(item.installmentAmount), 0), totalAmount: purchases.filter((item) => item.cardId === card.id).reduce((sum, item) => sum + Number(item.totalAmount), 0) }));
+}
+
+export type CardStatementDetail = {
+  cardId: number;
+  cardName: string;
+  brand: string;
+  statementMonth: string;
+  closingDay: number;
+  dueDay: number;
+  dueDate: Date;
+  purchaseCount: number;
+  installmentAmount: number;
+  totalAmount: number;
+  status: "open" | "empty";
+};
+
+export function buildCardStatementDetails(cards: Array<{ id: number; name: string; brand: string; dueDay: number; closingDay: number }>, purchases: Array<{ cardId: number; totalAmount: string | number; installmentAmount: string | number }>, month: string) {
+  const monthStart = new Date(`${month}-01T12:00:00`);
+  return cards.map((card): CardStatementDetail => {
+    const cardPurchases = purchases.filter((purchase) => purchase.cardId === card.id);
+    const dueDate = new Date(monthStart);
+    dueDate.setMonth(dueDate.getMonth() + 1);
+    dueDate.setDate(Math.min(card.dueDay, new Date(dueDate.getFullYear(), dueDate.getMonth() + 1, 0).getDate()));
+    return { cardId: card.id, cardName: card.name, brand: card.brand, statementMonth: month, closingDay: card.closingDay, dueDay: card.dueDay, dueDate, purchaseCount: cardPurchases.length, installmentAmount: cardPurchases.reduce((sum, purchase) => sum + Number(purchase.installmentAmount), 0), totalAmount: cardPurchases.reduce((sum, purchase) => sum + Number(purchase.totalAmount), 0), status: cardPurchases.length ? "open" : "empty" };
+  });
 }
 
 export type CoupleSnapshotPart = {
