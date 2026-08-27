@@ -3,7 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import { createTransaction, deleteTransaction, ensureFinanceProfiles, getFinanceDashboard, listFinanceData, restoreTrash, updateTransaction, listRoutineData, createRecurringRule, createBudget, createReminder, markBillPaid, permanentlyDeleteTrash, bulkCreateTransactions } from "./db";
+import { createTransaction, deleteTransaction, ensureFinanceProfiles, getFinanceDashboard, listFinanceData, restoreTrash, updateTransaction, listRoutineData, createRecurringRule, createBudget, createReminder, markBillPaid, permanentlyDeleteTrash, bulkCreateTransactions, listFinanceAudit, createFinanceBackup, listFinanceBackups, getFinanceBackup, restoreFinanceSnapshot } from "./db";
 import type { CsvTransaction } from "../shared/financeCsv";
 
 export const appRouter = router({
@@ -35,6 +35,11 @@ export const appRouter = router({
     createBudget: protectedProcedure.input(z.object({ profileId: z.number().int().positive(), month: z.string().regex(/^\d{4}-\d{2}$/), category: z.string().trim().min(1).max(80), amount: z.number().positive() })).mutation(({ ctx, input }) => createBudget({ ...input, userId: ctx.user.id, amount: input.amount.toFixed(2) })),
     createReminder: protectedProcedure.input(z.object({ profileId: z.number().int().positive(), title: z.string().trim().min(1).max(180), dueDate: z.coerce.date(), kind: z.string().trim().min(1).max(40) })).mutation(({ ctx, input }) => createReminder({ ...input, userId: ctx.user.id })),
     markBillPaid: protectedProcedure.input(z.object({ id: z.number().int().positive(), paid: z.boolean() })).mutation(({ ctx, input }) => markBillPaid(ctx.user.id, input.id, input.paid)),
+    audit: protectedProcedure.input(z.object({ limit: z.number().int().min(1).max(100).optional() }).optional()).query(({ ctx, input }) => listFinanceAudit(ctx.user.id, input?.limit)),
+    backups: protectedProcedure.query(({ ctx }) => listFinanceBackups(ctx.user.id)),
+    createBackup: protectedProcedure.input(z.object({ label: z.string().trim().min(1).max(120).optional() }).optional()).mutation(({ ctx, input }) => createFinanceBackup(ctx.user.id, input?.label)),
+    getBackup: protectedProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ ctx, input }) => { const backup = await getFinanceBackup(ctx.user.id, input.id); if (!backup) throw new Error("Backup não encontrado"); return backup; }),
+    restoreBackup: protectedProcedure.input(z.object({ profileId: z.number().int().positive(), snapshot: z.unknown() })).mutation(({ ctx, input }) => restoreFinanceSnapshot(ctx.user.id, input.profileId, input.snapshot)),
   }),
 });
 

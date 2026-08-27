@@ -98,3 +98,19 @@
 
 - [x] Adicionar teste do caminho de sucesso de `finance.importTransactions` com mock/stub, validando `{ created, skipped }`.
 - [x] Manter explícita a verificação manual com banco real e sessão autenticada para a importação completa como etapa opcional do usuário; o código e os testes não simulam essa sessão.
+
+## Prioridade 5 — colaboração e governança
+
+- [x] Definir regra base de acesso: cada usuário só consulta e altera seus próprios perfis; a visão Casal consolida os perfis disponíveis ao usuário autenticado. Compartilhamento entre contas distintas permanece fora deste marco.
+- [x] Adicionar histórico essencial de alterações com usuário, ação, entidade e data. O backend registra criações, edições, exclusões/restaurações de lançamentos e backups; mutações de contas, orçamento, lembretes e investimentos ficam fora do escopo deste marco.
+- [x] Adicionar backup exportável do snapshot financeiro e restauração com validação. O JSON inclui os módulos persistidos disponíveis; a restauração recompõe somente lançamentos por merge com deduplicação, sem apagar os demais dados.
+- [x] Criar APIs protegidas para histórico, criação/listagem/download de backup e restauração segura de lançamentos.
+- [x] Conectar histórico, criação/download e restauração de backup à interface do dashboard, com texto explícito sobre o escopo da restauração.
+- [x] Testar helpers de filtros, deduplicação e snapshots inválidos, além de check, build e 20 testes automatizados; operações autenticadas contra banco real permanecem como verificação manual.
+
+## Restauração segura da Prioridade 5
+
+- [x] Criar procedimento protegido para restaurar um snapshot por merge, sem apagar dados atuais automaticamente. A restauração atual é deliberadamente limitada a lançamentos.
+- [x] Adicionar seletor de arquivo JSON e confirmação antes da restauração.
+- [x] Registrar a restauração no histórico e reportar lançamentos criados e duplicados.
+- [x] Testar payload inválido e isolamento no contrato protegido; restauração válida contra banco real permanece como verificação manual.

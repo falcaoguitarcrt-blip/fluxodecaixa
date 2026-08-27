@@ -59,7 +59,7 @@ describe("finance procedures", () => {
   });
 });
 
-import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, resolveBillStatus, buildBillAlertSummary, dedupeTransactionRows } from "./db";
+import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, resolveBillStatus, buildBillAlertSummary, dedupeTransactionRows, restoreFinanceSnapshot } from "./db";
 import { parseFinanceCsv, serializeFinanceCsv } from "../shared/financeCsv";
 
 describe("finance calculations", () => {
@@ -180,6 +180,11 @@ describe("finance filters", () => {
   it("rejects an invalid import payload before database access", async () => {
     const caller = appRouter.createCaller(createContext());
     await expect(caller.finance.importTransactions({ profileId: 1, rows: [{ date: "2026-08", description: "Inválido", category: "Casa", bank: "Inter", direction: "out", amount: 10 }] })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("rejects invalid backup snapshots before database access", async () => {
+    await expect(restoreFinanceSnapshot(1, 1, { version: 2, data: {} })).rejects.toThrow("Snapshot inválido");
+    await expect(restoreFinanceSnapshot(1, 1, { version: 1, data: { transactions: [{ date: "bad", description: "x", category: "x", bank: "x", direction: "out", amount: 1 }] } })).rejects.toThrow("data ou valor inválido");
   });
 
   it("returns created and skipped counts for a valid CSV import", async () => {

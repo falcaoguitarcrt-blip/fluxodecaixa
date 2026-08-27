@@ -125,3 +125,25 @@ export const reminders = mysqlTable("reminders", {
 export type RecurringRule = typeof recurringRules.$inferSelect;
 export type Budget = typeof budgets.$inferSelect;
 export type Reminder = typeof reminders.$inferSelect;
+
+export const financeAuditLogs = mysqlTable("finance_audit_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  profileId: int("profileId"),
+  action: varchar("action", { length: 40 }).notNull(),
+  entityType: varchar("entityType", { length: 40 }).notNull(),
+  entityId: int("entityId"),
+  summary: varchar("summary", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({ ownerDateIdx: index("finance_audit_owner_date_idx").on(table.userId, table.createdAt) }));
+
+export const financeBackups = mysqlTable("finance_backups", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  label: varchar("label", { length: 120 }).notNull(),
+  payload: text("payload").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({ ownerDateIdx: index("finance_backups_owner_date_idx").on(table.userId, table.createdAt) }));
+
+export type FinanceAuditLog = typeof financeAuditLogs.$inferSelect;
+export type FinanceBackup = typeof financeBackups.$inferSelect;

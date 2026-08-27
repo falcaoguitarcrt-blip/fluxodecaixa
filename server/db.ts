@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, bills, cardPurchases, creditCards, financeProfiles, investments, transactions, trashItems, recurringRules, budgets, reminders } from "../drizzle/schema";
+import { InsertUser, users, bills, cardPurchases, creditCards, financeProfiles, investments, transactions, trashItems, recurringRules, budgets, reminders, financeAuditLogs, financeBackups } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import type { CsvTransaction } from "../shared/financeCsv";
 
@@ -90,6 +90,52 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function recordFinanceAudit(input: typeof financeAuditLogs.$inferInsert) {
+  const db = await getDb(); if (!db) return false;
+  await db.insert(financeAuditLogs).values(input);
+  return true;
+}
+
+export async function listFinanceAudit(userId: number, limit = 50) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(financeAuditLogs).where(eq(financeAuditLogs.userId, userId)).orderBy(desc(financeAuditLogs.createdAt)).limit(Math.min(limit, 100));
+}
+
+export async function createFinanceBackup(userId: number, label = "Backup manual") {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const data = await listFinanceData(userId);
+  const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), data });
+  const result = await db.insert(financeBackups).values({ userId, label, payload });
+  await recordFinanceAudit({ userId, action: "create", entityType: "backup", entityId: Number(result[0]?.insertId ?? 0), summary: label });
+  return { id: Number(result[0]?.insertId ?? 0), label, createdAt: new Date(), payload };
+}
+
+export async function listFinanceBackups(userId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select({ id: financeBackups.id, label: financeBackups.label, createdAt: financeBackups.createdAt }).from(financeBackups).where(eq(financeBackups.userId, userId)).orderBy(desc(financeBackups.createdAt)).limit(20);
+}
+
+export async function getFinanceBackup(userId: number, id: number) {
+  const db = await getDb(); if (!db) return undefined;
+  const rows = await db.select().from(financeBackups).where(and(eq(financeBackups.id, id), eq(financeBackups.userId, userId))).limit(1);
+  return rows[0];
+}
+
+export async function restoreFinanceSnapshot(userId: number, profileId: number, snapshot: unknown) {
+  const candidate = snapshot as { version?: unknown; data?: { transactions?: unknown[] } };
+  if (candidate.version !== 1 || !candidate.data || !Array.isArray(candidate.data.transactions)) throw new Error("Snapshot inválido");
+  const rows: CsvTransaction[] = candidate.data.transactions.map((row) => {
+    const item = row as Record<string, unknown>;
+    const direction = item.direction === "in" || item.direction === "out" ? item.direction : null;
+    if (typeof item.date !== "string" || typeof item.description !== "string" || typeof item.category !== "string" || typeof item.bank !== "string" || !direction || typeof item.amount !== "number" && typeof item.amount !== "string") throw new Error("Snapshot contém lançamento inválido");
+    return { date: item.date.slice(0, 10), description: item.description, category: item.category, bank: item.bank, direction, amount: Number(item.amount) };
+  });
+  if (rows.some((row) => !Number.isFinite(row.amount) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(row.date))) throw new Error("Snapshot contém data ou valor inválido");
+  const result = await bulkCreateTransactions(userId, profileId, rows);
+  await recordFinanceAudit({ userId, profileId, action: "restore", entityType: "backup", summary: `${result.created} lançamento(s) restaurado(s)` });
+  return result;
+}
+
 export async function ensureFinanceProfiles(userId: number) {
   const db = await getDb();
   if (!db) return [];
@@ -111,26 +157,36 @@ export async function listFinanceData(userId: number, profileId?: number) {
   const investmentWhere = profileId ? and(eq(investments.userId, userId), eq(investments.profileId, profileId)) : eq(investments.userId, userId);
   const cardWhere = profileId ? and(eq(creditCards.userId, userId), eq(creditCards.profileId, profileId)) : eq(creditCards.userId, userId);
   const purchaseWhere = profileId ? and(eq(cardPurchases.userId, userId), eq(cardPurchases.profileId, profileId)) : eq(cardPurchases.userId, userId);
-  const [tx, billRows, investmentRows, cardRows, purchaseRows, trashRows] = await Promise.all([
+  const recurringWhere = profileId ? and(eq(recurringRules.userId, userId), eq(recurringRules.profileId, profileId)) : eq(recurringRules.userId, userId);
+  const budgetWhere = profileId ? and(eq(budgets.userId, userId), eq(budgets.profileId, profileId)) : eq(budgets.userId, userId);
+  const reminderWhere = profileId ? and(eq(reminders.userId, userId), eq(reminders.profileId, profileId)) : eq(reminders.userId, userId);
+  const [tx, billRows, investmentRows, cardRows, purchaseRows, trashRows, recurringRows, budgetRows, reminderRows] = await Promise.all([
     db.select().from(transactions).where(txWhere).orderBy(desc(transactions.date)),
     db.select().from(bills).where(billWhere).orderBy(desc(bills.dueDate)),
     db.select().from(investments).where(investmentWhere).orderBy(desc(investments.investedAt)),
     db.select().from(creditCards).where(cardWhere).orderBy(desc(creditCards.createdAt)),
     db.select().from(cardPurchases).where(purchaseWhere).orderBy(desc(cardPurchases.purchaseDate)),
     db.select().from(trashItems).where(eq(trashItems.userId, userId)).orderBy(desc(trashItems.deletedAt)),
+    db.select().from(recurringRules).where(recurringWhere).orderBy(desc(recurringRules.createdAt)),
+    db.select().from(budgets).where(budgetWhere).orderBy(desc(budgets.createdAt)),
+    db.select().from(reminders).where(reminderWhere).orderBy(desc(reminders.dueDate)),
   ]);
-  return { profiles, transactions: tx, bills: billRows, investments: investmentRows, cards: cardRows, purchases: purchaseRows, trash: trashRows };
+  return { profiles, transactions: tx, bills: billRows, investments: investmentRows, cards: cardRows, purchases: purchaseRows, trash: trashRows, recurring: recurringRows, budgets: budgetRows, reminders: reminderRows };
 }
 
 export async function createTransaction(input: typeof transactions.$inferInsert) {
   const db = await getDb(); if (!db) throw new Error("Database unavailable");
-  const result = await db.insert(transactions).values(input); return result[0]?.insertId;
+  const result = await db.insert(transactions).values(input);
+  await recordFinanceAudit({ userId: input.userId, profileId: input.profileId, action: "create", entityType: "transaction", entityId: Number(result[0]?.insertId ?? 0), summary: input.description });
+  return result[0]?.insertId;
 }
 
 export async function updateTransaction(userId: number, id: number, input: Partial<typeof transactions.$inferInsert>) {
   const db = await getDb(); if (!db) throw new Error("Database unavailable");
   await db.update(transactions).set(input).where(and(eq(transactions.id, id), eq(transactions.userId, userId)));
-  return db.select().from(transactions).where(and(eq(transactions.id, id), eq(transactions.userId, userId))).limit(1);
+  const updated = await db.select().from(transactions).where(and(eq(transactions.id, id), eq(transactions.userId, userId))).limit(1);
+  if (updated[0]) await recordFinanceAudit({ userId, profileId: updated[0].profileId, action: "update", entityType: "transaction", entityId: id, summary: updated[0].description });
+  return updated;
 }
 
 function transactionSignature(row: { date: Date; description: string; category: string; bank: string; direction: "in" | "out"; amount: string | number }) {
@@ -163,6 +219,7 @@ export async function deleteTransaction(userId: number, id: number) {
   if (!found[0]) return false;
   await db.insert(trashItems).values({ userId, entityType: "transaction", entityId: id, label: found[0].description, payload: JSON.stringify(found[0]) });
   await db.delete(transactions).where(and(eq(transactions.id, id), eq(transactions.userId, userId)));
+  await recordFinanceAudit({ userId, profileId: found[0].profileId, action: "delete", entityType: "transaction", entityId: id, summary: found[0].description });
   return true;
 }
 
@@ -172,6 +229,7 @@ export async function restoreTrash(userId: number, id: number) {
   const item = found[0]; if (!item) return false;
   if (item.entityType === "transaction") { const payload = JSON.parse(item.payload); delete payload.id; await db.insert(transactions).values(payload); }
   await db.delete(trashItems).where(and(eq(trashItems.id, id), eq(trashItems.userId, userId)));
+  await recordFinanceAudit({ userId, profileId: item.entityType === "transaction" ? JSON.parse(item.payload).profileId : null, action: "restore", entityType: item.entityType, entityId: item.entityId, summary: item.label });
   return true;
 }
 
