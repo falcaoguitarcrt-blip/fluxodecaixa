@@ -253,3 +253,11 @@
 - [x] Integrar a materialização ao bootstrap e à tela Contas sem misturar fluxos financeiros.
 - [x] Adicionar testes de mês, datas-limite, perfil, idempotência e duplicidade.
 - [x] Validar migração, check, testes, build e responsividade sem alterar dados existentes.
+
+## Nova auditoria comparativa — Contas, lançamentos e investimentos da Sara
+
+- [x] Revisar a implementação atual da tela Contas, lançamentos mensais e investimentos da Sara.
+- [x] Verificar isolamento por perfil, competência, status, datas, valores, parcelas e duplicidades.
+- [x] Comparar regras comuns e diferenças necessárias entre Felipe, Sara e Casal.
+- [x] Executar check, testes e inspeções sem alterar código funcional ou dados financeiros.
+- [x] Produzir diagnóstico priorizado com riscos, impactos e recomendações antes de implementar.
