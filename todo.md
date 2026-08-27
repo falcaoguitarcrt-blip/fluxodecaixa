@@ -233,3 +233,13 @@
 - [x] Atualizar filtros de lançamentos, investimentos e cartões para usar os helpers de mês e preservar a competência correta.
 - [x] Adicionar testes de mês sem registros, meses anterior/posterior, datas-limite, status e fuso brasileiro.
 - [x] Validar check, testes, build e responsividade sem alterar os dados financeiros existentes.
+
+## Prioridade 2 da auditoria — governança de pagamentos e perfis
+
+- [x] Revisar o diagnóstico e mapear o fluxo atual de pagamento/status de contas.
+- [x] Garantir que marcar ou reabrir uma conta valide usuário, perfil e competência antes de alterar o registro.
+- [x] Registrar pagamento, reabertura e alteração de status com evento de auditoria consistente.
+- [x] Reforçar a invalidação das consultas relacionadas à tela Contas, rotina, Sidebar, casal e histórico.
+- [x] Corrigir estados visuais para refletir status derivado sem permitir inconsistência entre status salvo e status exibido.
+- [x] Adicionar testes de isolamento por perfil, pagamento/reabertura, auditoria e cache lógico.
+- [x] Validar check, testes, build e responsividade sem alterar dados financeiros existentes.

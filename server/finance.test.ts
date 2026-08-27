@@ -64,9 +64,21 @@ describe("finance procedures", () => {
     await expect(caller.finance.routine({ profileId: 1, month: "2026-00" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(caller.finance.couple({ month: "2026-13" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
+
+  it("requires profile and month context for bill status changes", async () => {
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.finance.markBillPaid({ id: 1, paid: true } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.finance.markBillPaid({ id: 1, profileId: 1, month: "2026-13", paid: true })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.finance.updateBill({ id: 1, description: "Conta" } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("does not accept late as a manually persisted bill status", async () => {
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.finance.createBill({ profileId: 1, description: "Conta", dueDate: new Date(), amount: 10, responsible: "Felipe", status: "late" } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
 });
 
-import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, resolveBillStatus, buildBillAlertSummary, dedupeTransactionRows, restoreFinanceSnapshot, calculateSavingsGoalProgress, assertSavingsGoalProfile, assertSavingsGoalAccess, buildCoupleDashboard, buildCoupleDashboardForUser, buildCardStatementDetails } from "./db";
+import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, billStatusAuditAction, resolveBillStatus, buildBillAlertSummary, dedupeTransactionRows, restoreFinanceSnapshot, calculateSavingsGoalProgress, assertSavingsGoalProfile, assertSavingsGoalAccess, buildCoupleDashboard, buildCoupleDashboardForUser, buildCardStatementDetails } from "./db";
 import { parseFinanceCsv, serializeFinanceCsv } from "../shared/financeCsv";
 
 describe("finance calculations", () => {
@@ -149,6 +161,12 @@ describe("finance filters", () => {
       { date: new Date("2026-08-11T12:00:00Z"), category: "Casa", direction: "out", amount: "75.00" },
       { date: new Date("2026-08-11T12:00:00Z"), category: "Casa", direction: "in", amount: "999.00" },
     ], "2026-08")).toEqual([{ category: "Casa", limit: 500, spent: 200, remaining: 300, percent: 40 }]);
+  });
+
+  it("classifies bill status audit events without confusing payment and reopening", () => {
+    expect(billStatusAuditAction("pending", "paid")).toBe("payment");
+    expect(billStatusAuditAction("paid", "pending")).toBe("reopen");
+    expect(billStatusAuditAction("pending", "pending")).toBe("update");
   });
 
   it("resolves overdue and paid bill statuses from the due date", () => {

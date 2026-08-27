@@ -334,11 +334,16 @@ export async function createBill(userId: number, input: Omit<typeof bills.$infer
   return id;
 }
 
-export async function updateBill(userId: number, id: number, input: Partial<Omit<typeof bills.$inferInsert, "userId" | "profileId">>) {
-  const db = await getDb(); if (!db) throw new Error("Database unavailable");
-  await db.update(bills).set(input).where(and(eq(bills.id, id), eq(bills.userId, userId)));
-  const updated = await db.select().from(bills).where(and(eq(bills.id, id), eq(bills.userId, userId))).limit(1);
-  if (updated[0]) await recordFinanceAudit({ userId, profileId: updated[0].profileId, action: "update", entityType: "bill", entityId: id, summary: updated[0].description });
+export async function updateBill(userId: number, profileId: number, id: number, input: Partial<Omit<typeof bills.$inferInsert, "userId" | "profileId">>) {
+  const db = await assertFinanceProfile(userId, profileId);
+  const current = await db.select().from(bills).where(and(eq(bills.id, id), eq(bills.userId, userId), eq(bills.profileId, profileId))).limit(1);
+  if (!current[0]) throw new Error("Conta não encontrada para o perfil selecionado");
+  await db.update(bills).set(input).where(and(eq(bills.id, id), eq(bills.userId, userId), eq(bills.profileId, profileId)));
+  const updated = await db.select().from(bills).where(and(eq(bills.id, id), eq(bills.userId, userId), eq(bills.profileId, profileId))).limit(1);
+  if (updated[0]) {
+    const action = billStatusAuditAction(current[0].status, updated[0].status);
+    await recordFinanceAudit({ userId, profileId: updated[0].profileId, action, entityType: "bill", entityId: id, summary: action === "payment" ? `Pagamento: ${updated[0].description}` : action === "reopen" ? `Reabertura: ${updated[0].description}` : updated[0].description });
+  }
   return updated;
 }
 
@@ -449,6 +454,11 @@ export function filterTransactions(rows: Array<typeof transactions.$inferSelect>
     if (filters.month && !isDateInMonth(item.date, filters.month)) return false;
     return true;
   });
+}
+
+export function billStatusAuditAction(previousStatus: string, nextStatus: string) {
+  if (previousStatus === nextStatus) return "update" as const;
+  return nextStatus === "paid" ? "payment" as const : "reopen" as const;
 }
 
 export function resolveBillStatus(item: { status: "pending" | "paid" | "late"; dueDate: Date }, now = new Date()) {
@@ -633,10 +643,15 @@ export async function createReminder(input: typeof reminders.$inferInsert) {
   const result = await db.insert(reminders).values(input); return result[0]?.insertId;
 }
 
-export async function markBillPaid(userId: number, id: number, paid: boolean) {
-  const db = await getDb(); if (!db) throw new Error("Database unavailable");
-  await db.update(bills).set({ status: paid ? "paid" : "pending" }).where(and(eq(bills.id, id), eq(bills.userId, userId)));
-  return true;
+export async function markBillPaid(userId: number, id: number, profileId: number, month: string, paid: boolean) {
+  const db = await assertFinanceProfile(userId, profileId);
+  const current = await db.select().from(bills).where(and(eq(bills.id, id), eq(bills.userId, userId), eq(bills.profileId, profileId))).limit(1);
+  if (!current[0]) throw new Error("Conta não encontrada para o perfil selecionado");
+  if (!isDateInMonth(current[0].dueDate, month)) throw new Error("A conta não pertence ao mês selecionado");
+  const nextStatus = paid ? "paid" : "pending";
+  await db.update(bills).set({ status: nextStatus }).where(and(eq(bills.id, id), eq(bills.userId, userId), eq(bills.profileId, profileId)));
+  await recordFinanceAudit({ userId, profileId, action: paid ? "payment" : "reopen", entityType: "bill", entityId: id, summary: `${paid ? "Pagamento" : "Reabertura"}: ${current[0].description} · ${month}` });
+  return { id, profileId, month, status: nextStatus };
 }
 
 export async function permanentlyDeleteTrash(userId: number, id: number) {
