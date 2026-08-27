@@ -214,3 +214,12 @@
 - [x] Corrigir o fluxo de investimentos para salvar e atualizar os dados sem convertê-los em lançamento comum, usando o formulário e procedimento próprios.
 - [x] Garantir atualização das consultas, cálculos e auditoria após cada operação.
 - [x] Adicionar testes para contratos de exclusão e categorias, além das barreiras de perfil; validar check, 34 testes, build e responsividade. A interação de botão direito permanece validada visualmente e deve ser conferida manualmente pelo usuário.
+
+## Auditoria solicitada — Contas e lançamentos mensais
+
+- [x] Mapear na tela Contas todos os filtros, estados, ações e dependências do mês global.
+- [x] Verificar se lançamentos, contas, recorrências, cartões e investimentos aparecem somente no mês pertinente ao seu lançamento ou vencimento.
+- [x] Auditar riscos de duplicidade, datas UTC/local, conversão de valores, parcelas, status pago/pendente/atrasado e exclusões.
+- [x] Comparar os contratos tRPC, helpers de banco e cálculos da Home com o comportamento visual da tela.
+- [x] Executar testes e inspeções sem alterar dados persistidos; check e 34 testes passaram.
+- [x] Produzir diagnóstico priorizado com riscos, impactos, correções recomendadas e testes necessários antes de implementar; implementação da Prioridade A aguarda aprovação.
