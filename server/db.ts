@@ -106,12 +106,16 @@ export async function listFinanceData(userId: number, profileId?: number) {
   if (!db) return { profiles: [], transactions: [], bills: [], investments: [], cards: [], purchases: [], trash: [] };
   const profiles = await ensureFinanceProfiles(userId);
   const txWhere = profileId ? and(eq(transactions.userId, userId), eq(transactions.profileId, profileId)) : eq(transactions.userId, userId);
+  const billWhere = profileId ? and(eq(bills.userId, userId), eq(bills.profileId, profileId)) : eq(bills.userId, userId);
+  const investmentWhere = profileId ? and(eq(investments.userId, userId), eq(investments.profileId, profileId)) : eq(investments.userId, userId);
+  const cardWhere = profileId ? and(eq(creditCards.userId, userId), eq(creditCards.profileId, profileId)) : eq(creditCards.userId, userId);
+  const purchaseWhere = profileId ? and(eq(cardPurchases.userId, userId), eq(cardPurchases.profileId, profileId)) : eq(cardPurchases.userId, userId);
   const [tx, billRows, investmentRows, cardRows, purchaseRows, trashRows] = await Promise.all([
     db.select().from(transactions).where(txWhere).orderBy(desc(transactions.date)),
-    db.select().from(bills).where(eq(bills.userId, userId)).orderBy(desc(bills.dueDate)),
-    db.select().from(investments).where(eq(investments.userId, userId)).orderBy(desc(investments.investedAt)),
-    db.select().from(creditCards).where(eq(creditCards.userId, userId)).orderBy(desc(creditCards.createdAt)),
-    db.select().from(cardPurchases).where(eq(cardPurchases.userId, userId)).orderBy(desc(cardPurchases.purchaseDate)),
+    db.select().from(bills).where(billWhere).orderBy(desc(bills.dueDate)),
+    db.select().from(investments).where(investmentWhere).orderBy(desc(investments.investedAt)),
+    db.select().from(creditCards).where(cardWhere).orderBy(desc(creditCards.createdAt)),
+    db.select().from(cardPurchases).where(purchaseWhere).orderBy(desc(cardPurchases.purchaseDate)),
     db.select().from(trashItems).where(eq(trashItems.userId, userId)).orderBy(desc(trashItems.deletedAt)),
   ]);
   return { profiles, transactions: tx, bills: billRows, investments: investmentRows, cards: cardRows, purchases: purchaseRows, trash: trashRows };
@@ -152,31 +156,45 @@ export function calculateCommitment(income: number, expenses: number, billsPendi
   return income > 0 ? Number((((expenses + billsPending + cardInstallments) / income) * 100).toFixed(2)) : 0;
 }
 
-export async function getFinanceDashboard(userId: number, filters: FinanceFilters = {}) {
-  const data = await listFinanceData(userId, filters.profileId);
-  const filteredTransactions = data.transactions.filter((item) => {
+export function filterTransactions(rows: Array<typeof transactions.$inferSelect>, filters: Pick<FinanceFilters, "month" | "bank" | "category"> = {}) {
+  return rows.filter((item) => {
     if (filters.bank && item.bank !== filters.bank) return false;
     if (filters.category && item.category !== filters.category) return false;
-    if (filters.month) {
-      const month = new Date(item.date).toISOString().slice(0, 7);
-      if (month !== filters.month) return false;
-    }
+    if (filters.month && new Date(item.date).toISOString().slice(0, 7) !== filters.month) return false;
     return true;
   });
+}
+
+export function filterBills(rows: Array<typeof bills.$inferSelect>, filters: { month?: string; status?: string } = {}) {
+  return rows.filter((item) => (!filters.status || item.status === filters.status) && (!filters.month || new Date(item.dueDate).toISOString().slice(0, 7) === filters.month));
+}
+
+export function filterInvestments(rows: Array<typeof investments.$inferSelect>, filters: Pick<FinanceFilters, "month" | "bank" | "category"> = {}) {
+  return rows.filter((item) => (!filters.month || new Date(item.investedAt).toISOString().slice(0, 7) === filters.month) && (!filters.bank || item.institution === filters.bank) && (!filters.category || item.category === filters.category));
+}
+
+export function filterCardPurchases(rows: Array<typeof cardPurchases.$inferSelect>, filters: Pick<FinanceFilters, "month" | "cardId"> = {}) {
+  return rows.filter((item) => (!filters.month || new Date(item.purchaseDate).toISOString().slice(0, 7) === filters.month) && (!filters.cardId || item.cardId === filters.cardId));
+}
+
+export async function getFinanceDashboard(userId: number, filters: FinanceFilters = {}) {
+  const data = await listFinanceData(userId, filters.profileId);
+  const filteredTransactions = filterTransactions(data.transactions, filters);
   const totals = filteredTransactions.reduce((acc, item) => {
     const amount = Number(item.amount);
     if (item.direction === "in") acc.income += amount; else acc.expenses += amount;
     return acc;
   }, { income: 0, expenses: 0 });
-  const invested = data.investments.reduce((sum, item) => sum + Number(item.marketValue), 0);
-  const cardMonth = data.purchases.filter((item) => (!filters.month || new Date(item.purchaseDate).toISOString().slice(0, 7) === filters.month) && (!filters.cardId || item.cardId === filters.cardId));
+  const filteredInvestments = filterInvestments(data.investments, filters);
+  const invested = filteredInvestments.reduce((sum, item) => sum + Number(item.marketValue), 0);
+  const cardMonth = filterCardPurchases(data.purchases, filters);
   const cardInstallments = cardMonth.reduce((sum, item) => sum + Number(item.installmentAmount), 0);
   const cardTotal = cardMonth.reduce((sum, item) => sum + Number(item.totalAmount), 0);
   const cardsSummary = buildCardsSummary(data.cards, cardMonth);
-  const billsPending = data.bills.filter((item) => item.status !== "paid").reduce((sum, item) => sum + Number(item.amount), 0);
+  const billsPending = filterBills(data.bills, { month: filters.month }).filter((item) => item.status !== "paid").reduce((sum, item) => sum + Number(item.amount), 0);
   const balance = totals.income - totals.expenses;
   const series = buildFinanceSeries(filteredTransactions);
-  return { ...data, transactions: filteredTransactions, summary: { income: totals.income, expenses: totals.expenses, balance, invested, billsPending, cardInstallments, cardTotal, cardsSummary, commitment: calculateCommitment(totals.income, totals.expenses, billsPending, cardInstallments), series } };
+  return { ...data, transactions: filteredTransactions, investments: filteredInvestments, purchases: cardMonth, summary: { income: totals.income, expenses: totals.expenses, balance, invested, billsPending, cardInstallments, cardTotal, cardsSummary, commitment: calculateCommitment(totals.income, totals.expenses, billsPending, cardInstallments), series } };
 }
 
 export function buildFinanceSeries(rows: Array<{ date: Date; direction: "in" | "out"; amount: string | number }>) {
