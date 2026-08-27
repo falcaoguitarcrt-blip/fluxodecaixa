@@ -169,3 +169,20 @@
 ## Cobertura adicional de acesso da Prioridade 8
 
 - [x] Cobrir os contratos tRPC com rejeição direta de chamadas declaradas para perfil Felipe e cobrir a regra compartilhada para perfil Felipe válido e perfil pertencente a outro usuário; a confirmação com registros reais permanece manual autenticada.
+
+## Prioridade 9 — visão Casal consolidada
+
+- [x] Mapear a visão Casal atual e definir os indicadores consolidados sem usar valores fictícios.
+- [x] Criar helper de agregação para combinar Felipe e Sara por mês, incluindo saldo, entradas, saídas e comprometimento.
+- [x] Expor procedimento tRPC protegido para o resumo consolidado do casal, respeitando usuário e perfis disponíveis.
+- [x] Consolidar patrimônio investido, valor de mercado, resultado e instituições dos dois perfis.
+- [x] Consolidar faturas e parcelas por cartão, mês e perfil, mantendo cartões individuais identificáveis.
+- [x] Recompor a interface Casal com cards financeiros, comparativo Felipe/Sara e estados vazios honestos.
+- [x] Adicionar indicadores de distribuição por perfil e explicação de como o casal é calculado.
+- [x] Validar mês global, responsividade desktop/mobile e ausência de dados inventados em prévia sem autenticação; dados reais ficam para a sessão manual do usuário.
+- [x] Cobrir agregações, estado vazio, validação de mês e acesso protegido por usuário/perfil com 30 testes Vitest; executar check, testes e build. A execução com banco autenticado real permanece manual.
+
+## Fechamento da Prioridade 9
+
+- [x] Expor no consolidado o valor efetivamente investido e o resultado agregado de investimentos, calculado como valor de mercado menos valor investido.
+- [x] Adicionar teste do procedimento tRPC da visão Casal para mês inválido/estado vazio, além de cobertura do filtro de usuário e da consolidação somente de Felipe/Sara; a validação com dados reais de múltiplos usuários permanece manual autenticada.

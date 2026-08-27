@@ -59,7 +59,7 @@ describe("finance procedures", () => {
   });
 });
 
-import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, resolveBillStatus, buildBillAlertSummary, dedupeTransactionRows, restoreFinanceSnapshot, calculateSavingsGoalProgress, assertSavingsGoalProfile, assertSavingsGoalAccess } from "./db";
+import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, resolveBillStatus, buildBillAlertSummary, dedupeTransactionRows, restoreFinanceSnapshot, calculateSavingsGoalProgress, assertSavingsGoalProfile, assertSavingsGoalAccess, buildCoupleDashboard, buildCoupleDashboardForUser } from "./db";
 import { parseFinanceCsv, serializeFinanceCsv } from "../shared/financeCsv";
 
 describe("finance calculations", () => {
@@ -190,6 +190,38 @@ describe("finance filters", () => {
   it("returns created and skipped counts for a valid CSV import", async () => {
     const caller = appRouter.createCaller(createContext());
     await expect(caller.finance.importTransactions({ profileId: 1, rows: [{ date: "2026-08-21", description: "Mercado", category: "Casa", bank: "Inter", direction: "out", amount: 35.5 }] })).resolves.toEqual({ created: 2, skipped: 1 });
+  });
+});
+
+describe("couple dashboard aggregation", () => {
+  it("consolidates profile totals, cards and institutions without static fallback values", () => {
+    const result = buildCoupleDashboard([
+      { profileKey: "felipe", displayName: "Felipe", profileId: 1, summary: { income: 3000, expenses: 1000, balance: 2000, invested: 4000, investedAmount: 3500, billsPending: 100, cardInstallments: 50, cardTotal: 100 }, cards: [{ id: 10, name: "Inter Felipe", brand: "Visa", dueDay: 20, closingDay: 13 }], purchases: [{ cardId: 10, totalAmount: "100.00", installmentAmount: "50.00" }], investments: [{ institution: "Inter", investedAmount: "3500.00", marketValue: "4000.00" }], bills: [{}] },
+      { profileKey: "sara", displayName: "Sara", profileId: 2, summary: { income: 1000, expenses: 200, balance: 800, invested: 1500, investedAmount: 1500, billsPending: 50, cardInstallments: 25, cardTotal: 40 }, cards: [{ id: 11, name: "Nubank Sara", brand: "Mastercard", dueDay: 10, closingDay: 3 }], purchases: [{ cardId: 11, totalAmount: "40.00", installmentAmount: "25.00" }], investments: [{ institution: "Inter", investedAmount: "1500.00", marketValue: "1500.00" }], bills: [{}, {}] },
+    ]);
+    expect(result.summary).toMatchObject({ income: 4000, expenses: 1200, balance: 2800, invested: 5500, investedAmount: 5000, investmentResult: 500, billsPending: 150, cardInstallments: 75, cardTotal: 140, commitment: 35.63, totalCards: 2, totalBills: 3 });
+    expect(result.profiles.map((profile) => profile.profileKey)).toEqual(["felipe", "sara"]);
+    expect(result.cards.map((card) => card.purchaseCount)).toEqual([1, 1]);
+    expect(result.institutions).toEqual([{ institution: "Inter", marketValue: 5500, profiles: ["felipe", "sara"] }]);
+  });
+
+  it("filters the consolidated snapshot by authenticated user and keeps only Felipe/Sara profiles", () => {
+    const sharedPart = { profileKey: "felipe" as const, displayName: "Felipe", profileId: 1, userId: 7, summary: { income: 100, expenses: 25, balance: 75, invested: 10, investedAmount: 8, billsPending: 0, cardInstallments: 0, cardTotal: 0 }, cards: [], purchases: [], investments: [], bills: [] };
+    const foreignPart = { ...sharedPart, userId: 99, profileId: 99 };
+    const saraPart = { ...sharedPart, profileKey: "sara" as const, displayName: "Sara", profileId: 2 };
+    const result = buildCoupleDashboardForUser(7, [sharedPart, saraPart, foreignPart, { ...sharedPart, profileKey: "other" as never }]);
+    expect(result.profiles.map((profile) => profile.profileKey)).toEqual(["felipe", "sara"]);
+    expect(result.summary.income).toBe(200);
+  });
+
+  it("returns an honest empty consolidated state and validates the month contract", async () => {
+    const empty = buildCoupleDashboard([]);
+    expect(empty.summary).toMatchObject({ income: 0, expenses: 0, balance: 0, invested: 0, commitment: 0, totalCards: 0, totalBills: 0 });
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.finance.couple({ month: "2026-8" } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    const response = await caller.finance.couple({ month: "2026-08" });
+    expect(response.summary).toMatchObject({ income: 0, expenses: 0, balance: 0, invested: 0, investedAmount: 0, investmentResult: 0 });
+    expect(response.profiles.every((profile) => profile.profileKey === "felipe" || profile.profileKey === "sara")).toBe(true);
   });
 });
 

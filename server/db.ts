@@ -447,6 +447,67 @@ export function buildCardsSummary(cards: Array<{ id: number; name: string }>, pu
   return cards.map((card) => ({ cardId: card.id, name: card.name, installmentAmount: purchases.filter((item) => item.cardId === card.id).reduce((sum, item) => sum + Number(item.installmentAmount), 0), totalAmount: purchases.filter((item) => item.cardId === card.id).reduce((sum, item) => sum + Number(item.totalAmount), 0) }));
 }
 
+export type CoupleSnapshotPart = {
+  profileKey: "felipe" | "sara";
+  displayName: string;
+  profileId: number;
+  summary: {
+    income: number;
+    expenses: number;
+    balance: number;
+    invested: number;
+    billsPending: number;
+    cardInstallments: number;
+    cardTotal: number;
+    investedAmount: number;
+  };
+  cards: Array<{ id: number; name: string; brand: string; dueDay: number; closingDay: number }>;
+  purchases: Array<{ cardId: number; totalAmount: string | number; installmentAmount: string | number }>;
+  investments: Array<{ institution: string; investedAmount: string | number; marketValue: string | number }>;
+  bills: Array<unknown>;
+  userId?: number;
+};
+
+export function buildCoupleDashboard(parts: CoupleSnapshotPart[]) {
+  const income = parts.reduce((sum, part) => sum + part.summary.income, 0);
+  const expenses = parts.reduce((sum, part) => sum + part.summary.expenses, 0);
+  const billsPending = parts.reduce((sum, part) => sum + part.summary.billsPending, 0);
+  const cardInstallments = parts.reduce((sum, part) => sum + part.summary.cardInstallments, 0);
+  const cardTotal = parts.reduce((sum, part) => sum + part.summary.cardTotal, 0);
+  const investedAmount = parts.reduce((sum, part) => sum + part.summary.investedAmount, 0);
+  const cards = parts.flatMap((part) => part.cards.map((card) => {
+    const purchases = part.purchases.filter((purchase) => purchase.cardId === card.id);
+    return { profileKey: part.profileKey, profileName: part.displayName, ...card, purchaseCount: purchases.length, installmentAmount: purchases.reduce((sum, purchase) => sum + Number(purchase.installmentAmount), 0), totalAmount: purchases.reduce((sum, purchase) => sum + Number(purchase.totalAmount), 0) };
+  }));
+  const institutionMap = new Map<string, { institution: string; marketValue: number; profiles: Set<string> }>();
+  parts.forEach((part) => part.investments.forEach((investment) => {
+    const current = institutionMap.get(investment.institution) ?? { institution: investment.institution, marketValue: 0, profiles: new Set<string>() };
+    current.marketValue += Number(investment.marketValue);
+    current.profiles.add(part.profileKey);
+    institutionMap.set(investment.institution, current);
+  }));
+  return {
+    summary: { income, expenses, balance: income - expenses, invested: parts.reduce((sum, part) => sum + part.summary.invested, 0), investedAmount, investmentResult: parts.reduce((sum, part) => sum + part.summary.invested, 0) - investedAmount, billsPending, cardInstallments, cardTotal, commitment: calculateCommitment(income, expenses, billsPending, cardInstallments), totalCards: parts.reduce((sum, part) => sum + part.cards.length, 0), totalBills: parts.reduce((sum, part) => sum + part.bills.length, 0) },
+    profiles: parts.map((part) => ({ profileKey: part.profileKey, displayName: part.displayName, profileId: part.profileId, summary: part.summary, investmentCount: part.investments.length, cardCount: part.cards.length, billCount: part.bills.length })),
+    cards,
+    institutions: Array.from(institutionMap.values()).map((institution) => ({ ...institution, profiles: Array.from(institution.profiles) })),
+  };
+}
+
+export function buildCoupleDashboardForUser(userId: number, parts: CoupleSnapshotPart[]) {
+  return buildCoupleDashboard(parts.filter((part) => part.userId === undefined || part.userId === userId).filter((part) => part.profileKey === "felipe" || part.profileKey === "sara"));
+}
+
+export async function getCoupleDashboard(userId: number, month = new Date().toISOString().slice(0, 7)) {
+  const profiles = await ensureFinanceProfiles(userId);
+  const parts = await Promise.all(profiles.filter((profile) => profile.profileKey === "felipe" || profile.profileKey === "sara").map(async (profile) => {
+    const dashboard = await getFinanceDashboard(userId, { profileId: profile.id, month });
+    const investedAmount = dashboard.investments.reduce((sum, investment) => sum + Number(investment.investedAmount), 0);
+    return { userId, profileKey: profile.profileKey, displayName: profile.displayName, profileId: profile.id, summary: { ...dashboard.summary, investedAmount }, cards: dashboard.cards, purchases: dashboard.purchases, investments: dashboard.investments, bills: dashboard.bills } satisfies CoupleSnapshotPart;
+  }));
+  return buildCoupleDashboardForUser(userId, parts);
+}
+
 
 export function buildBudgetSummary(budgetRows: Array<{ month: string; category: string; amount: string | number }>, transactionRows: Array<{ date: Date; category: string; direction: "in" | "out"; amount: string | number }>, month: string) {
   return budgetRows.filter((budget) => budget.month === month).map((budget) => {
