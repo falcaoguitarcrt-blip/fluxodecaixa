@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, bills, cardPurchases, creditCards, financeProfiles, investments, transactions, trashItems } from "../drizzle/schema";
+import { InsertUser, users, bills, cardPurchases, creditCards, financeProfiles, investments, transactions, trashItems, recurringRules, budgets, reminders } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -165,8 +165,20 @@ export function filterTransactions(rows: Array<typeof transactions.$inferSelect>
   });
 }
 
-export function filterBills(rows: Array<typeof bills.$inferSelect>, filters: { month?: string; status?: string } = {}) {
-  return rows.filter((item) => (!filters.status || item.status === filters.status) && (!filters.month || new Date(item.dueDate).toISOString().slice(0, 7) === filters.month));
+export function resolveBillStatus(item: { status: "pending" | "paid" | "late"; dueDate: Date }, now = new Date()) {
+  if (item.status === "paid") return "paid" as const;
+  return new Date(item.dueDate).getTime() < now.getTime() ? "late" as const : "pending" as const;
+}
+
+export function buildBillAlertSummary<T extends { status: "pending" | "paid" | "late"; dueDate: Date }>(rows: T[], now = new Date()) {
+  return {
+    overdueBills: rows.filter((item) => resolveBillStatus(item, now) === "late"),
+    upcomingBills: rows.filter((item) => resolveBillStatus(item, now) === "pending").sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()).slice(0, 5),
+  };
+}
+
+export function filterBills(rows: Array<typeof bills.$inferSelect>, filters: { month?: string; status?: string } = {}, now = new Date()) {
+  return rows.filter((item) => (!filters.status || resolveBillStatus(item, now) === filters.status) && (!filters.month || new Date(item.dueDate).toISOString().slice(0, 7) === filters.month));
 }
 
 export function filterInvestments(rows: Array<typeof investments.$inferSelect>, filters: Pick<FinanceFilters, "month" | "bank" | "category"> = {}) {
@@ -205,4 +217,54 @@ export function buildFinanceSeries(rows: Array<{ date: Date; direction: "in" | "
 
 export function buildCardsSummary(cards: Array<{ id: number; name: string }>, purchases: Array<{ cardId: number; totalAmount: string | number; installmentAmount: string | number }>) {
   return cards.map((card) => ({ cardId: card.id, name: card.name, installmentAmount: purchases.filter((item) => item.cardId === card.id).reduce((sum, item) => sum + Number(item.installmentAmount), 0), totalAmount: purchases.filter((item) => item.cardId === card.id).reduce((sum, item) => sum + Number(item.totalAmount), 0) }));
+}
+
+
+export function buildBudgetSummary(budgetRows: Array<{ month: string; category: string; amount: string | number }>, transactionRows: Array<{ date: Date; category: string; direction: "in" | "out"; amount: string | number }>, month: string) {
+  return budgetRows.filter((budget) => budget.month === month).map((budget) => {
+    const spent = transactionRows.filter((item) => item.direction === "out" && item.category === budget.category && new Date(item.date).toISOString().slice(0, 7) === month).reduce((sum, item) => sum + Number(item.amount), 0);
+    const limit = Number(budget.amount);
+    return { category: budget.category, limit, spent, remaining: Math.max(0, limit - spent), percent: limit > 0 ? Number(Math.min(100, (spent / limit) * 100).toFixed(2)) : 0 };
+  });
+}
+
+export async function listRoutineData(userId: number, profileId: number, month = new Date().toISOString().slice(0, 7)) {
+  const db = await getDb();
+  if (!db) return { recurring: [], budgets: [], reminders: [], budgetSummary: [], upcomingBills: [], overdueBills: [] };
+  const [recurring, budgetRows, reminderRows, transactionRows, billRows] = await Promise.all([
+    db.select().from(recurringRules).where(and(eq(recurringRules.userId, userId), eq(recurringRules.profileId, profileId))).orderBy(desc(recurringRules.dayOfMonth)),
+    db.select().from(budgets).where(and(eq(budgets.userId, userId), eq(budgets.profileId, profileId))).orderBy(desc(budgets.month)),
+    db.select().from(reminders).where(and(eq(reminders.userId, userId), eq(reminders.profileId, profileId))).orderBy(desc(reminders.dueDate)),
+    db.select({ date: transactions.date, category: transactions.category, direction: transactions.direction, amount: transactions.amount }).from(transactions).where(and(eq(transactions.userId, userId), eq(transactions.profileId, profileId))),
+    db.select().from(bills).where(and(eq(bills.userId, userId), eq(bills.profileId, profileId))).orderBy(desc(bills.dueDate)),
+  ]);
+  const { upcomingBills, overdueBills } = buildBillAlertSummary(billRows);
+  return { recurring, budgets: budgetRows, reminders: reminderRows, budgetSummary: buildBudgetSummary(budgetRows, transactionRows, month), upcomingBills, overdueBills };
+}
+
+export async function createRecurringRule(input: typeof recurringRules.$inferInsert) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const result = await db.insert(recurringRules).values(input); return result[0]?.insertId;
+}
+
+export async function createBudget(input: typeof budgets.$inferInsert) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const result = await db.insert(budgets).values(input); return result[0]?.insertId;
+}
+
+export async function createReminder(input: typeof reminders.$inferInsert) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const result = await db.insert(reminders).values(input); return result[0]?.insertId;
+}
+
+export async function markBillPaid(userId: number, id: number, paid: boolean) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  await db.update(bills).set({ status: paid ? "paid" : "pending" }).where(and(eq(bills.id, id), eq(bills.userId, userId)));
+  return true;
+}
+
+export async function permanentlyDeleteTrash(userId: number, id: number) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const result = await db.delete(trashItems).where(and(eq(trashItems.id, id), eq(trashItems.userId, userId)));
+  return Boolean(result);
 }

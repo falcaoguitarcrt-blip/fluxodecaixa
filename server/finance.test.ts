@@ -48,7 +48,7 @@ describe("finance procedures", () => {
   });
 });
 
-import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases } from "./db";
+import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, resolveBillStatus, buildBillAlertSummary } from "./db";
 
 describe("finance calculations", () => {
   it("groups card purchases by card and separates installment from total", () => {
@@ -112,5 +112,30 @@ describe("finance filters", () => {
       { id: 2, purchaseDate: new Date("2026-08-10T12:00:00Z"), cardId: 2 },
     ].map((row) => ({ ...row, userId: 1, profileId: 1, description: "Compra", category: "Casa", totalAmount: "100.00", installmentAmount: "50.00", installments: 2, currentInstallment: 1, createdAt: new Date(), updatedAt: new Date() }));
     expect(filterCardPurchases(rows, { month: "2026-08", cardId: 2 })).toHaveLength(1);
+  });
+
+  it("calculates monthly budget consumption by category", () => {
+    expect(buildBudgetSummary([{ month: "2026-08", category: "Casa", amount: "500.00" }], [
+      { date: new Date("2026-08-10T12:00:00Z"), category: "Casa", direction: "out", amount: "125.00" },
+      { date: new Date("2026-08-11T12:00:00Z"), category: "Casa", direction: "out", amount: "75.00" },
+      { date: new Date("2026-08-11T12:00:00Z"), category: "Casa", direction: "in", amount: "999.00" },
+    ], "2026-08")).toEqual([{ category: "Casa", limit: 500, spent: 200, remaining: 300, percent: 40 }]);
+  });
+
+  it("resolves overdue and paid bill statuses from the due date", () => {
+    const now = new Date("2026-08-27T12:00:00Z");
+    expect(resolveBillStatus({ status: "pending", dueDate: new Date("2026-08-20T12:00:00Z") }, now)).toBe("late");
+    expect(resolveBillStatus({ status: "pending", dueDate: new Date("2026-08-30T12:00:00Z") }, now)).toBe("pending");
+    expect(resolveBillStatus({ status: "paid", dueDate: new Date("2026-08-20T12:00:00Z") }, now)).toBe("paid");
+  });
+
+  it("builds overdue and upcoming bill alerts in date order", () => {
+    const alerts = buildBillAlertSummary([
+      { status: "pending" as const, dueDate: new Date("2026-09-10T12:00:00Z") },
+      { status: "pending" as const, dueDate: new Date("2026-08-20T12:00:00Z") },
+      { status: "paid" as const, dueDate: new Date("2026-08-18T12:00:00Z") },
+    ], new Date("2026-08-27T12:00:00Z"));
+    expect(alerts.overdueBills).toHaveLength(1);
+    expect(alerts.upcomingBills[0]?.dueDate.toISOString()).toBe("2026-09-10T12:00:00.000Z");
   });
 });

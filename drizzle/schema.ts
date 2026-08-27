@@ -81,3 +81,47 @@ export const cardPurchases = mysqlTable("card_purchases", {
 }, (table) => ({ ownerDateIdx: index("card_purchases_owner_date_idx").on(table.userId, table.purchaseDate) }));
 
 export type CardPurchase = typeof cardPurchases.$inferSelect;
+
+
+export const recurringRules = mysqlTable("recurring_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  profileId: int("profileId").notNull(),
+  description: varchar("description", { length: 180 }).notNull(),
+  category: varchar("category", { length: 80 }).notNull(),
+  bank: varchar("bank", { length: 80 }).notNull(),
+  direction: mysqlEnum("direction", ["in", "out"]).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  dayOfMonth: int("dayOfMonth").notNull(),
+  startDate: timestamp("startDate").notNull(),
+  endDate: timestamp("endDate"),
+  active: int("active").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({ ownerIdx: index("recurring_rules_owner_idx").on(table.userId, table.profileId) }));
+
+export const budgets = mysqlTable("budgets", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  profileId: int("profileId").notNull(),
+  month: varchar("month", { length: 7 }).notNull(),
+  category: varchar("category", { length: 80 }).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({ ownerMonthIdx: index("budgets_owner_month_idx").on(table.userId, table.profileId, table.month) }));
+
+export const reminders = mysqlTable("reminders", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  profileId: int("profileId").notNull(),
+  title: varchar("title", { length: 180 }).notNull(),
+  dueDate: timestamp("dueDate").notNull(),
+  kind: varchar("kind", { length: 40 }).notNull(),
+  readAt: timestamp("readAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({ ownerDueIdx: index("reminders_owner_due_idx").on(table.userId, table.profileId, table.dueDate) }));
+
+export type RecurringRule = typeof recurringRules.$inferSelect;
+export type Budget = typeof budgets.$inferSelect;
+export type Reminder = typeof reminders.$inferSelect;

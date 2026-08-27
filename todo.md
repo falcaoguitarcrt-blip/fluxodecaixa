@@ -46,3 +46,31 @@
 
 - [ ] Validar em sessão autenticada os filtros de período, banco, categoria, cartão, pessoa/perfil e status com dados persistidos distintos. Pendente porque a sessão do navegador está sem login; a validação não deve ser simulada.
 - [x] Ampliar a cobertura automatizada dos helpers de filtragem de contas, investimentos, cartões e lançamentos, incluindo casos sem resultados. Testes de componente/UI autenticados permanecem como evolução futura.
+
+## Prioridade 3 — rotina financeira diária
+
+- [x] Definir tabelas e regras para lançamentos recorrentes, parcelas e lembretes. Schema e procedimentos protegidos criados.
+- [x] Implementar orçamento mensal por categoria, com cálculo de limite, gasto, saldo restante e percentual consumido.
+- [x] Implementar contas pagas, pendentes, atrasadas e marcação de pagamento. O status é calculado dinamicamente pela data de vencimento; a tela permite alternar entre pago e pendente.
+- [x] Integrar exclusão, restauração e exclusão permanente individual à lixeira persistida. A remoção definitiva exige confirmação do usuário.
+- [x] Exibir próximos vencimentos e alertas dinâmicos no dashboard. O cartão de rotina prioriza contas atrasadas e lembretes próximos a partir dos dados persistidos.
+- [x] Testar regras financeiras, operações de pagamento, build e estados responsivos desktop/mobile; testes autenticados com dados reais dependem de login do usuário.
+
+## Fechamento da Prioridade 3
+
+- [x] Implementar e validar status real de contas atrasadas, com cálculo por data e filtro na interface.
+- [x] Implementar exclusão permanente individual na lixeira com confirmação.
+- [x] Calcular próximos vencimentos e alertas dinamicamente a partir das contas persistidas.
+- [x] Testar regras de atraso, pagamento, exclusão permanente e alertas dinâmicos. Foram adicionados testes unitários para o status de contas e orçamento.
+
+## Ajustes finais de interface e cobertura da Prioridade 3
+
+- [x] Exibir status atrasada na tela de Contas usando a regra calculada e permitir filtrar por atrasadas.
+- [x] Exibir próximos vencimentos no cartão de rotina e substituir o aviso lateral estático por dados dinâmicos. O cartão de rotina e o aviso da barra lateral consultam `upcomingBills` e `overdueBills`.
+- [ ] Adicionar testes de integração dos fluxos autenticados de pagamento e exclusão permanente; as regras puras de status e alertas já têm cobertura unitária, mas a operação completa depende de sessão e banco com dados reais.
+
+## Correções de fechamento da Prioridade 3
+
+- [x] Substituir o aviso estático da barra lateral por contagem dinâmica de atrasos e próximos vencimentos.
+- [x] Extrair helper puro para alertas e cobri-lo com teste. A exclusão permanente usa procedimento protegido diretamente no banco e ainda não tem teste de integração.
+- [x] Ajustar o checklist para não declarar cobertura de fluxo de pagamento autenticado sem sessão real.
