@@ -175,7 +175,7 @@ export async function listFinanceData(userId: number, profileId?: number) {
 }
 
 export async function createTransaction(input: typeof transactions.$inferInsert) {
-  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const db = await assertFinanceProfile(input.userId, input.profileId);
   const result = await db.insert(transactions).values(input);
   await recordFinanceAudit({ userId: input.userId, profileId: input.profileId, action: "create", entityType: "transaction", entityId: Number(result[0]?.insertId ?? 0), summary: input.description });
   return result[0]?.insertId;
@@ -186,6 +186,79 @@ export async function updateTransaction(userId: number, id: number, input: Parti
   await db.update(transactions).set(input).where(and(eq(transactions.id, id), eq(transactions.userId, userId)));
   const updated = await db.select().from(transactions).where(and(eq(transactions.id, id), eq(transactions.userId, userId))).limit(1);
   if (updated[0]) await recordFinanceAudit({ userId, profileId: updated[0].profileId, action: "update", entityType: "transaction", entityId: id, summary: updated[0].description });
+  return updated;
+}
+
+async function assertFinanceProfile(userId: number, profileId: number) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const profile = await db.select({ id: financeProfiles.id }).from(financeProfiles).where(and(eq(financeProfiles.id, profileId), eq(financeProfiles.userId, userId))).limit(1);
+  if (!profile[0]) throw new Error("Perfil financeiro não encontrado");
+  return db;
+}
+
+export async function createBill(userId: number, input: Omit<typeof bills.$inferInsert, "userId">) {
+  const db = await assertFinanceProfile(userId, input.profileId);
+  const result = await db.insert(bills).values({ ...input, userId });
+  const id = Number(result[0]?.insertId ?? 0);
+  await recordFinanceAudit({ userId, profileId: input.profileId, action: "create", entityType: "bill", entityId: id, summary: input.description });
+  return id;
+}
+
+export async function updateBill(userId: number, id: number, input: Partial<Omit<typeof bills.$inferInsert, "userId" | "profileId">>) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  await db.update(bills).set(input).where(and(eq(bills.id, id), eq(bills.userId, userId)));
+  const updated = await db.select().from(bills).where(and(eq(bills.id, id), eq(bills.userId, userId))).limit(1);
+  if (updated[0]) await recordFinanceAudit({ userId, profileId: updated[0].profileId, action: "update", entityType: "bill", entityId: id, summary: updated[0].description });
+  return updated;
+}
+
+export async function createInvestment(userId: number, input: Omit<typeof investments.$inferInsert, "userId">) {
+  const db = await assertFinanceProfile(userId, input.profileId);
+  const result = await db.insert(investments).values({ ...input, userId });
+  const id = Number(result[0]?.insertId ?? 0);
+  await recordFinanceAudit({ userId, profileId: input.profileId, action: "create", entityType: "investment", entityId: id, summary: input.description });
+  return id;
+}
+
+export async function updateInvestment(userId: number, id: number, input: Partial<Omit<typeof investments.$inferInsert, "userId" | "profileId">>) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  await db.update(investments).set(input).where(and(eq(investments.id, id), eq(investments.userId, userId)));
+  const updated = await db.select().from(investments).where(and(eq(investments.id, id), eq(investments.userId, userId))).limit(1);
+  if (updated[0]) await recordFinanceAudit({ userId, profileId: updated[0].profileId, action: "update", entityType: "investment", entityId: id, summary: updated[0].description });
+  return updated;
+}
+
+export async function createCreditCard(userId: number, input: Omit<typeof creditCards.$inferInsert, "userId">) {
+  const db = await assertFinanceProfile(userId, input.profileId);
+  const result = await db.insert(creditCards).values({ ...input, userId });
+  const id = Number(result[0]?.insertId ?? 0);
+  await recordFinanceAudit({ userId, profileId: input.profileId, action: "create", entityType: "card", entityId: id, summary: input.name });
+  return id;
+}
+
+export async function updateCreditCard(userId: number, id: number, input: Partial<Omit<typeof creditCards.$inferInsert, "userId" | "profileId">>) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  await db.update(creditCards).set(input).where(and(eq(creditCards.id, id), eq(creditCards.userId, userId)));
+  const updated = await db.select().from(creditCards).where(and(eq(creditCards.id, id), eq(creditCards.userId, userId))).limit(1);
+  if (updated[0]) await recordFinanceAudit({ userId, profileId: updated[0].profileId, action: "update", entityType: "card", entityId: id, summary: updated[0].name });
+  return updated;
+}
+
+export async function createCardPurchase(userId: number, input: Omit<typeof cardPurchases.$inferInsert, "userId">) {
+  const db = await assertFinanceProfile(userId, input.profileId);
+  const card = await db.select({ id: creditCards.id }).from(creditCards).where(and(eq(creditCards.id, input.cardId), eq(creditCards.userId, userId), eq(creditCards.profileId, input.profileId))).limit(1);
+  if (!card[0]) throw new Error("Cartão não pertence ao perfil selecionado");
+  const result = await db.insert(cardPurchases).values({ ...input, userId });
+  const id = Number(result[0]?.insertId ?? 0);
+  await recordFinanceAudit({ userId, profileId: input.profileId, action: "create", entityType: "card_purchase", entityId: id, summary: input.description });
+  return id;
+}
+
+export async function updateCardPurchase(userId: number, id: number, input: Partial<Omit<typeof cardPurchases.$inferInsert, "userId" | "profileId" | "cardId">>) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  await db.update(cardPurchases).set(input).where(and(eq(cardPurchases.id, id), eq(cardPurchases.userId, userId)));
+  const updated = await db.select().from(cardPurchases).where(and(eq(cardPurchases.id, id), eq(cardPurchases.userId, userId))).limit(1);
+  if (updated[0]) await recordFinanceAudit({ userId, profileId: updated[0].profileId, action: "update", entityType: "card_purchase", entityId: id, summary: updated[0].description });
   return updated;
 }
 

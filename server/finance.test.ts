@@ -192,3 +192,69 @@ describe("finance filters", () => {
     await expect(caller.finance.importTransactions({ profileId: 1, rows: [{ date: "2026-08-21", description: "Mercado", category: "Casa", bank: "Inter", direction: "out", amount: 35.5 }] })).resolves.toEqual({ created: 2, skipped: 1 });
   });
 });
+
+describe("priority 7 form contracts", () => {
+  it("rejects an invalid bill amount", async () => {
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.finance.createBill({
+      profileId: 1,
+      description: "Aluguel",
+      dueDate: new Date(),
+      amount: 0,
+      responsible: "Felipe",
+      status: "pending",
+    })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("rejects negative investment market values", async () => {
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.finance.createInvestment({
+      profileId: 1,
+      description: "CDB",
+      category: "Renda fixa",
+      institution: "Inter",
+      investedAmount: 100,
+      marketValue: -1,
+      investedAt: new Date(),
+    })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("rejects card days outside the calendar range", async () => {
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.finance.createCreditCard({
+      profileId: 1,
+      name: "Cartão teste",
+      brand: "Visa",
+      dueDay: 32,
+      closingDay: 13,
+    })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("rejects purchases with an invalid installment count", async () => {
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.finance.createCardPurchase({
+      profileId: 1,
+      cardId: 1,
+      description: "Compra teste",
+      category: "Casa",
+      purchaseDate: new Date(),
+      totalAmount: 100,
+      installments: 0,
+      currentInstallment: 1,
+    })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+});
+
+  it("rejects a current installment greater than the total on card purchases", async () => {
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.finance.createCardPurchase({
+      profileId: 1,
+      cardId: 1,
+      description: "Compra inconsistente",
+      category: "Casa",
+      purchaseDate: new Date(),
+      totalAmount: 100,
+      installments: 2,
+      currentInstallment: 3,
+    })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });

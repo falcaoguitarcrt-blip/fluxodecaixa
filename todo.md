@@ -129,3 +129,23 @@
 - [x] Tornar o Resumo do Casal visualmente equivalente à referência, com saldo, entradas, saídas, comprometimento e cards de contas/investimentos/faturas; os resumos usam os perfis persistidos quando autenticados.
 - [x] Reforçar o botão de tema claro/escuro no cabeçalho em todos os módulos, com persistência da preferência.
 - [x] Validar responsividade desktop/mobile, check, 20 testes automatizados, build e ausência de regressões conhecidas nos fluxos persistentes. A validação com dados autenticados reais permanece manual.
+
+## Prioridade 7 — formulários e operações financeiras reais
+
+- [x] Criar formulário persistente para editar lançamentos existentes, com validação de data, descrição, categoria, banco, tipo e valor.
+- [x] Conectar o fluxo de registro/edição ao cabeçalho contextual, à lista de lançamentos e às ações dos módulos, sem placeholders enganosos para essas operações.
+- [x] Criar formulário persistente de contas, com descrição, valor, vencimento, responsável e status.
+- [x] Criar formulário persistente de investimentos, com descrição, categoria, instituição, valor investido, valor de mercado e data.
+- [x] Criar formulário persistente de cartões, com nome, bandeira, dia de fechamento e dia de vencimento. O schema atual não possui campo de limite; o formulário não inventa esse dado.
+- [x] Criar formulário persistente de compras/faturas de cartão, com cartão, descrição, categoria, data, valor total, parcelas e parcela atual.
+- [x] Adicionar validações de domínio e mensagens de erro/sucesso nos formulários da Prioridade 7.
+- [x] Invalidar as consultas relacionadas após cada criação ou edição e refletir os dados na interface sem recarregar a página.
+- [x] Registrar as novas criações e edições no histórico de auditoria, respeitando o usuário e perfil ativos.
+- [x] Cobrir contratos novos com testes Vitest; validar check, 24 testes, build e responsividade desktop/mobile. Testes de persistência autenticada real permanecem como validação manual.
+
+## Correções de fechamento da Prioridade 7
+
+- [x] Ajustar o escopo do botão de ajustes do cabeçalho para comunicar que ele controla apenas a visualização; a edição financeira permanece nas listas e nos formulários de cada módulo.
+- [x] Adicionar refinamento server-side em compras de cartão para garantir `currentInstallment <= installments` também via API.
+- [x] Adicionar testes Vitest para a regra server-side de parcelas inconsistentes.
+- [ ] Validar manualmente os modais abertos em uma sessão autenticada, em desktop e mobile, pois a prévia sandbox atual está sem login.
