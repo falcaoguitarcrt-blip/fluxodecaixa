@@ -362,6 +362,11 @@ h2 { margin-bottom: 0; color: #f0f4f5; font-family: 'Playfair Display', serif; f
   --alert-border: #e47461;
   --alert-text: #ffd5cc;
   --alert-icon: #ff9886;
+  --color-income: #a8d7c2;
+  --color-expense: #e2b5aa;
+  --color-warning: #e7d28d;
+  --color-link: #b7dbed;
+  --color-icon-muted: #aebdc8;
   background-color: var(--bg-app);
   color: var(--text-primary);
 }
@@ -386,6 +391,11 @@ h2 { margin-bottom: 0; color: #f0f4f5; font-family: 'Playfair Display', serif; f
   --alert-border: #c84432;
   --alert-text: #8c2419;
   --alert-icon: #a92f20;
+  --color-income: #14654f;
+  --color-expense: #9c3b2f;
+  --color-warning: #765300;
+  --color-link: #155f88;
+  --color-icon-muted: #4c6374;
   filter: none;
   background-color: var(--bg-app);
   color: var(--text-primary);
@@ -810,3 +820,81 @@ h2 { margin-bottom: 0; color: #f0f4f5; font-family: 'Playfair Display', serif; f
   color: #b18a32;
 }
 .app-shell:not(.light-mode) .stat-notice svg { color: #e4c86f; }
+
+
+/* Tokens semânticos dos componentes financeiros auditados. */
+.app-shell {
+  --color-income: #a8d7c2;
+  --color-expense: #e2b5aa;
+  --color-warning: #e7d28d;
+  --color-link: #b7dbed;
+  --color-icon-muted: #aebdc8;
+  --color-chart-income: #80b9e5;
+  --color-chart-income-deep: #3f82ba;
+  --color-chart-expense: #ddc378;
+  --color-chart-expense-deep: #9a7f3c;
+  --color-track: #3b5262;
+  --assistant-glow: rgba(92, 182, 217, .10);
+}
+.app-shell.light-mode {
+  --color-income: #14654f;
+  --color-expense: #9c3b2f;
+  --color-warning: #765300;
+  --color-link: #155f88;
+  --color-icon-muted: #4c6374;
+  --color-chart-income: #357cae;
+  --color-chart-income-deep: #21618e;
+  --color-chart-expense: #9a7620;
+  --color-chart-expense-deep: #745916;
+  --color-track: #c7d2d9;
+  --assistant-glow: rgba(53, 124, 174, .12);
+}
+.app-shell .chart-income-dot { background: var(--color-chart-income); }
+.app-shell .chart-expense-dot { background: var(--color-chart-expense); }
+.app-shell .routine-overdue-title { color: var(--alert-text); }
+.app-shell .filter-icon,
+.app-shell .period-control-icon,
+.app-shell .sidebar-tip-icon { color: var(--color-icon-muted); }
+.app-shell .transaction-amount-income { color: var(--color-income); }
+.app-shell .transaction-amount-expense,
+.app-shell .expense-value { color: var(--color-expense); }
+.app-shell .commitment-expense-value { color: var(--color-expense); }
+.app-shell .commitment-account-value,
+.app-shell .commitment-card-value { color: var(--text-primary); }
+.app-shell .chart-panel .chart-y,
+.app-shell .chart-panel .chart-x,
+.app-shell .chart-panel .legend { color: var(--text-muted); }
+.app-shell .chart-panel .chart-area { border-bottom-color: var(--border-soft); }
+.app-shell .chart-panel .bar-in { background: linear-gradient(180deg, var(--color-chart-income), var(--color-chart-income-deep)); }
+.app-shell .chart-panel .bar-out { background: linear-gradient(180deg, var(--color-chart-expense), var(--color-chart-expense-deep)); }
+.app-shell .commitment-track { background: var(--color-track); }
+.app-shell .commitment-track span:nth-child(1) { background: var(--color-chart-income-deep); }
+.app-shell .commitment-track span:nth-child(2) { background: var(--color-income); }
+.app-shell .commitment-track span:nth-child(3) { background: var(--color-warning); }
+.app-shell .assistant-card:after { background: var(--assistant-glow); }
+.app-shell .assistant-action { color: var(--text-secondary); }
+.app-shell .assistant-action:hover { color: var(--text-primary); }
+.app-shell .trend-pill { color: var(--color-income); }
+.app-shell .inline-link { color: var(--color-link); }
+.app-shell .inline-link:hover { color: var(--text-primary); }
+.app-shell .filter-bar .filter-title,
+.app-shell .filter-bar .filter-title .filter-icon { color: var(--text-secondary); }
+.app-shell .table-row,
+.app-shell .statement-row,
+.app-shell .bill-row,
+.app-shell .transaction-row { color: var(--text-secondary); }
+.app-shell .table-row.table-header,
+.app-shell .statement-head,
+.app-shell .list-head { color: var(--text-secondary); }
+.app-shell .table-row strong,
+.app-shell .bill-row > strong { color: var(--text-primary); }
+.app-shell .row-primary-text { color: var(--text-primary); }
+.app-shell .row-secondary-text { color: var(--text-muted); }
+.app-shell .edit-link,
+.app-shell .sort-badge { color: var(--color-link); }
+.app-shell .status.pending { color: var(--color-warning); }
+.app-shell .checkbox { border-color: var(--border); background: var(--bg-surface-soft); }
+.app-shell .icon-tile.mint { border-color: color-mix(in srgb, var(--color-income) 70%, var(--border)); background: color-mix(in srgb, var(--color-income) 12%, transparent); color: var(--color-income); }
+.app-shell .icon-tile.gold { border-color: color-mix(in srgb, var(--color-warning) 70%, var(--border)); background: color-mix(in srgb, var(--color-warning) 12%, transparent); color: var(--color-warning); }
+.app-shell .icon-tile.clay,
+.app-shell .icon-tile.coral { border-color: color-mix(in srgb, var(--color-expense) 70%, var(--border)); background: color-mix(in srgb, var(--color-expense) 12%, transparent); color: var(--color-expense); }

@@ -64,6 +64,22 @@ describe("theme contrast tokens", () => {
     expect(css).toContain("button.profile-casal.active");
   });
 
+  it.each([
+    ["color-income", "bg-surface"],
+    ["color-expense", "bg-surface"],
+    ["color-warning", "bg-surface"],
+    ["color-link", "bg-surface"],
+    ["color-icon-muted", "bg-surface"],
+  ])("keeps %s over %s at WCAG AA in light mode", (foreground, background) => {
+    expect(contrastRatio(token(foreground, light), token(background, light))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("declares semantic classes for chart, financial values and controls", () => {
+    for (const selector of [".chart-income-dot", ".chart-expense-dot", ".transaction-amount-income", ".transaction-amount-expense", ".expense-value", ".routine-overdue-title", ".filter-icon", ".period-control-icon", ".sidebar-tip-icon"]) {
+      expect(css).toContain(selector);
+    }
+  });
+
   it("declares semantic overrides for the requested financial surfaces", () => {
     for (const selector of [".sidebar", ".assistant-card", ".word-day-card", ".transaction-list", ".table-panel", ".card-statement"]) {
       expect(css).toContain(`.app-shell ${selector}`);

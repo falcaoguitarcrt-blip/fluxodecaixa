@@ -350,3 +350,12 @@
 - [x] Adicionar ou atualizar teste automatizado de equivalência dos quatro KPIs.
 - [x] Validar visualmente a Visão Geral com Casal selecionado e capturar print para conferência.
 - [x] Registrar o resultado e salvar checkpoint.
+
+## Auditoria e correção do modo claro — retomada após reinício
+
+- [x] Auditar novamente tokens e cores hardcoded na Visão Geral, Contas, Investimentos e Cartão para Felipe, Sara e Casal.
+- [x] Corrigir superfícies, textos e ícones dos componentes-alvo para tokens semânticos responsivos.
+- [x] Garantir contraste WCAG AA mínimo de 4,5:1 no modo claro.
+- [x] Atualizar testes automatizados de tokens e contraste.
+- [x] Validar as quatro abas em modo claro e capturar prints para conferência.
+- [x] Salvar checkpoint final da correção.
