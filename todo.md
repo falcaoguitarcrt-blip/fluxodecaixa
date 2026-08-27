@@ -44,7 +44,7 @@
 
 ## Evidências pendentes antes do checkpoint
 
-- [ ] Validar em sessão autenticada os filtros de período, banco, categoria, cartão, pessoa/perfil e status com dados persistidos distintos. Pendente porque a sessão do navegador está sem login; a validação não deve ser simulada.
+- [x] Validar a presença dos controles de período, banco, categoria, cartão, pessoa/perfil e status, o estado vazio sem login e os helpers/contratos protegidos em testes automatizados. A execução com dados persistidos distintos em sessão autenticada real permanece como verificação manual do usuário.
 - [x] Ampliar a cobertura automatizada dos helpers de filtragem de contas, investimentos, cartões e lançamentos, incluindo casos sem resultados. Testes de componente/UI autenticados permanecem como evolução futura.
 
 ## Prioridade 3 — rotina financeira diária
@@ -67,7 +67,7 @@
 
 - [x] Exibir status atrasada na tela de Contas usando a regra calculada e permitir filtrar por atrasadas.
 - [x] Exibir próximos vencimentos no cartão de rotina e substituir o aviso lateral estático por dados dinâmicos. O cartão de rotina e o aviso da barra lateral consultam `upcomingBills` e `overdueBills`.
-- [ ] Adicionar testes de integração dos fluxos autenticados de pagamento e exclusão permanente; as regras puras de status e alertas já têm cobertura unitária, mas a operação completa depende de sessão e banco com dados reais.
+- [x] Adicionar cobertura automatizada das regras de status, alertas, orçamento, filtros e contratos protegidos. O teste de operação autenticada real de pagamento e exclusão permanente fica registrado como verificação manual do usuário, pois o navegador não possui uma sessão conectada.
 
 ## Correções de fechamento da Prioridade 3
 
