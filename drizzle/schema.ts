@@ -63,3 +63,21 @@ export type Bill = typeof bills.$inferSelect;
 export type Investment = typeof investments.$inferSelect;
 export type CreditCard = typeof creditCards.$inferSelect;
 export type TrashItem = typeof trashItems.$inferSelect;
+
+export const cardPurchases = mysqlTable("card_purchases", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  profileId: int("profileId").notNull(),
+  cardId: int("cardId").notNull(),
+  description: varchar("description", { length: 180 }).notNull(),
+  category: varchar("category", { length: 80 }).notNull(),
+  purchaseDate: timestamp("purchaseDate").notNull(),
+  totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }).notNull(),
+  installmentAmount: decimal("installmentAmount", { precision: 12, scale: 2 }).notNull(),
+  installments: int("installments").notNull().default(1),
+  currentInstallment: int("currentInstallment").notNull().default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({ ownerDateIdx: index("card_purchases_owner_date_idx").on(table.userId, table.purchaseDate) }));
+
+export type CardPurchase = typeof cardPurchases.$inferSelect;

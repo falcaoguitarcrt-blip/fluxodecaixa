@@ -47,3 +47,34 @@ describe("finance procedures", () => {
     })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 });
+
+import { buildCardsSummary, buildFinanceSeries, calculateCommitment } from "./db";
+
+describe("finance calculations", () => {
+  it("groups card purchases by card and separates installment from total", () => {
+    expect(buildCardsSummary([{ id: 1, name: "Inter" }, { id: 2, name: "Rico" }], [
+      { cardId: 1, installmentAmount: "25.00", totalAmount: "100.00" },
+      { cardId: 1, installmentAmount: "40.00", totalAmount: "40.00" },
+      { cardId: 2, installmentAmount: "12.50", totalAmount: "50.00" },
+    ])).toEqual([
+      { cardId: 1, name: "Inter", installmentAmount: 65, totalAmount: 140 },
+      { cardId: 2, name: "Rico", installmentAmount: 12.5, totalAmount: 50 },
+    ]);
+  });
+
+  it("calculates commitment from expenses, bills and card installments", () => {
+    expect(calculateCommitment(1000, 400, 100, 50)).toBe(55);
+    expect(calculateCommitment(0, 100, 50, 25)).toBe(0);
+  });
+
+  it("builds an ordered daily series for income and expenses", () => {
+    expect(buildFinanceSeries([
+      { date: new Date("2026-08-21T12:00:00Z"), direction: "out", amount: "20.00" },
+      { date: new Date("2026-08-20T12:00:00Z"), direction: "in", amount: "100.00" },
+      { date: new Date("2026-08-20T12:00:00Z"), direction: "out", amount: "15.00" },
+    ])).toEqual([
+      { date: "2026-08-20", income: 100, expenses: 15 },
+      { date: "2026-08-21", income: 0, expenses: 20 },
+    ]);
+  });
+});

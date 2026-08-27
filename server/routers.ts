@@ -3,7 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import { createTransaction, deleteTransaction, ensureFinanceProfiles, listFinanceData, restoreTrash, updateTransaction } from "./db";
+import { createTransaction, deleteTransaction, ensureFinanceProfiles, getFinanceDashboard, listFinanceData, restoreTrash, updateTransaction } from "./db";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -20,7 +20,7 @@ export const appRouter = router({
   }),
 
   finance: router({
-    bootstrap: protectedProcedure.query(({ ctx }) => listFinanceData(ctx.user.id)),
+    bootstrap: protectedProcedure.input(z.object({ profileId: z.number().int().positive().optional(), month: z.string().regex(/^\\d{4}-\\d{2}$/).optional(), bank: z.string().min(1).optional(), category: z.string().min(1).optional(), cardId: z.number().int().positive().optional() }).optional()).query(({ ctx, input }) => getFinanceDashboard(ctx.user.id, input ?? {})),
     profiles: protectedProcedure.query(({ ctx }) => ensureFinanceProfiles(ctx.user.id)),
     transactions: protectedProcedure.input(z.object({ profileId: z.number().int().positive().optional() }).optional()).query(({ ctx, input }) => listFinanceData(ctx.user.id, input?.profileId).then((data) => data.transactions)),
     createTransaction: protectedProcedure.input(z.object({ profileId: z.number().int().positive(), date: z.coerce.date(), description: z.string().trim().min(1).max(180), category: z.string().trim().min(1).max(80), bank: z.string().trim().min(1).max(80), direction: z.enum(["in", "out"]), amount: z.number().positive(), notes: z.string().max(2000).optional() })).mutation(({ ctx, input }) => createTransaction({ ...input, userId: ctx.user.id, amount: input.amount.toFixed(2) })),
