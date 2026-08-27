@@ -482,6 +482,17 @@ export function filterInvestments(rows: Array<typeof investments.$inferSelect>, 
   return rows.filter((item) => (!filters.month || isDateInMonth(item.investedAt, filters.month)) && (!filters.bank || item.institution === filters.bank) && (!filters.category || item.category === filters.category));
 }
 
+export function filterInvestmentPortfolio(rows: Array<typeof investments.$inferSelect>, filters: Pick<FinanceFilters, "bank" | "category"> = {}) {
+  return filterInvestments(rows, filters);
+}
+
+export function summarizeInvestments(monthlyRows: Array<{ investedAmount: string | number; marketValue: string | number }>, portfolioRows: Array<{ investedAmount: string | number; marketValue: string | number }>) {
+  const monthlyContribution = monthlyRows.reduce((sum, item) => sum + Number(item.investedAmount), 0);
+  const investedAmount = portfolioRows.reduce((sum, item) => sum + Number(item.investedAmount), 0);
+  const marketValue = portfolioRows.reduce((sum, item) => sum + Number(item.marketValue), 0);
+  return { monthlyContribution, investedAmount, marketValue, investmentResult: marketValue - investedAmount };
+}
+
 export function filterCardPurchases(rows: Array<typeof cardPurchases.$inferSelect>, filters: Pick<FinanceFilters, "month" | "cardId"> = {}) {
   return rows.filter((item) => (!filters.month || isDateInMonth(item.purchaseDate, filters.month)) && (!filters.cardId || item.cardId === filters.cardId));
 }
@@ -496,7 +507,8 @@ export async function getFinanceDashboard(userId: number, filters: FinanceFilter
     return acc;
   }, { income: 0, expenses: 0 });
   const filteredInvestments = filterInvestments(data.investments, filters);
-  const invested = filteredInvestments.reduce((sum, item) => sum + Number(item.marketValue), 0);
+  const portfolioInvestments = filterInvestmentPortfolio(data.investments, filters);
+  const investmentSummary = summarizeInvestments(filteredInvestments, portfolioInvestments);
   const cardMonth = filterCardPurchases(data.purchases, filters);
   const cardInstallments = cardMonth.reduce((sum, item) => sum + Number(item.installmentAmount), 0);
   const cardTotal = cardMonth.reduce((sum, item) => sum + Number(item.totalAmount), 0);
@@ -505,7 +517,7 @@ export async function getFinanceDashboard(userId: number, filters: FinanceFilter
   const billsPending = filterBills(data.bills, { month: filters.month }).filter((item) => item.status !== "paid").reduce((sum, item) => sum + Number(item.amount), 0);
   const balance = totals.income - totals.expenses;
   const series = buildFinanceSeries(filteredTransactions);
-  return { ...data, transactions: filteredTransactions, investments: filteredInvestments, purchases: cardMonth, summary: { income: totals.income, expenses: totals.expenses, balance, invested, billsPending, cardInstallments, cardTotal, cardsSummary, cardStatements, commitment: calculateCommitment(totals.income, totals.expenses, billsPending, cardInstallments), series } };
+  return { ...data, transactions: filteredTransactions, investments: filteredInvestments, investmentPortfolio: portfolioInvestments, purchases: cardMonth, summary: { income: totals.income, expenses: totals.expenses, balance, invested: investmentSummary.marketValue, investedAmount: investmentSummary.investedAmount, monthlyContribution: investmentSummary.monthlyContribution, investmentResult: investmentSummary.investmentResult, billsPending, cardInstallments, cardTotal, cardsSummary, cardStatements, commitment: calculateCommitment(totals.income, totals.expenses, billsPending, cardInstallments), series } };
 }
 
 export function buildFinanceSeries(rows: Array<{ date: Date; direction: "in" | "out"; amount: string | number }>) {
@@ -553,10 +565,11 @@ export type CoupleSnapshotPart = {
     expenses: number;
     balance: number;
     invested: number;
+    investedAmount: number;
+    monthlyContribution: number;
     billsPending: number;
     cardInstallments: number;
     cardTotal: number;
-    investedAmount: number;
   };
   cards: Array<{ id: number; name: string; brand: string; dueDay: number; closingDay: number }>;
   purchases: Array<{ cardId: number; totalAmount: string | number; installmentAmount: string | number }>;
@@ -572,6 +585,7 @@ export function buildCoupleDashboard(parts: CoupleSnapshotPart[]) {
   const cardInstallments = parts.reduce((sum, part) => sum + part.summary.cardInstallments, 0);
   const cardTotal = parts.reduce((sum, part) => sum + part.summary.cardTotal, 0);
   const investedAmount = parts.reduce((sum, part) => sum + part.summary.investedAmount, 0);
+  const monthlyContribution = parts.reduce((sum, part) => sum + part.summary.monthlyContribution, 0);
   const cards = parts.flatMap((part) => part.cards.map((card) => {
     const purchases = part.purchases.filter((purchase) => purchase.cardId === card.id);
     return { profileKey: part.profileKey, profileName: part.displayName, ...card, purchaseCount: purchases.length, installmentAmount: purchases.reduce((sum, purchase) => sum + Number(purchase.installmentAmount), 0), totalAmount: purchases.reduce((sum, purchase) => sum + Number(purchase.totalAmount), 0) };
@@ -584,7 +598,7 @@ export function buildCoupleDashboard(parts: CoupleSnapshotPart[]) {
     institutionMap.set(investment.institution, current);
   }));
   return {
-    summary: { income, expenses, balance: income - expenses, invested: parts.reduce((sum, part) => sum + part.summary.invested, 0), investedAmount, investmentResult: parts.reduce((sum, part) => sum + part.summary.invested, 0) - investedAmount, billsPending, cardInstallments, cardTotal, commitment: calculateCommitment(income, expenses, billsPending, cardInstallments), totalCards: parts.reduce((sum, part) => sum + part.cards.length, 0), totalBills: parts.reduce((sum, part) => sum + part.bills.length, 0) },
+    summary: { income, expenses, balance: income - expenses, invested: parts.reduce((sum, part) => sum + part.summary.invested, 0), investedAmount, monthlyContribution, investmentResult: parts.reduce((sum, part) => sum + part.summary.invested, 0) - investedAmount, billsPending, cardInstallments, cardTotal, commitment: calculateCommitment(income, expenses, billsPending, cardInstallments), totalCards: parts.reduce((sum, part) => sum + part.cards.length, 0), totalBills: parts.reduce((sum, part) => sum + part.bills.length, 0) },
     profiles: parts.map((part) => ({ profileKey: part.profileKey, displayName: part.displayName, profileId: part.profileId, summary: part.summary, investmentCount: part.investments.length, cardCount: part.cards.length, billCount: part.bills.length })),
     cards,
     institutions: Array.from(institutionMap.values()).map((institution) => ({ ...institution, profiles: Array.from(institution.profiles) })),
@@ -599,8 +613,7 @@ export async function getCoupleDashboard(userId: number, month = currentMonthKey
   const profiles = await ensureFinanceProfiles(userId);
   const parts = await Promise.all(profiles.filter((profile) => profile.profileKey === "felipe" || profile.profileKey === "sara").map(async (profile) => {
     const dashboard = await getFinanceDashboard(userId, { profileId: profile.id, month });
-    const investedAmount = dashboard.investments.reduce((sum, investment) => sum + Number(investment.investedAmount), 0);
-    return { userId, profileKey: profile.profileKey, displayName: profile.displayName, profileId: profile.id, summary: { ...dashboard.summary, investedAmount }, cards: dashboard.cards, purchases: dashboard.purchases, investments: dashboard.investments, bills: dashboard.bills } satisfies CoupleSnapshotPart;
+    return { userId, profileKey: profile.profileKey, displayName: profile.displayName, profileId: profile.id, summary: { ...dashboard.summary }, cards: dashboard.cards, purchases: dashboard.purchases, investments: dashboard.investmentPortfolio, bills: dashboard.bills } satisfies CoupleSnapshotPart;
   }));
   return buildCoupleDashboardForUser(userId, parts);
 }

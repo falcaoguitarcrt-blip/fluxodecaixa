@@ -261,3 +261,13 @@
 - [x] Comparar regras comuns e diferenças necessárias entre Felipe, Sara e Casal.
 - [x] Executar check, testes e inspeções sem alterar código funcional ou dados financeiros.
 - [x] Produzir diagnóstico priorizado com riscos, impactos e recomendações antes de implementar.
+
+## Melhoria patrimonial — aportes mensais versus patrimônio acumulado
+
+- [x] Definir e documentar a diferença entre aporte da competência e patrimônio acumulado.
+- [x] Implementar agregações patrimoniais por perfil sem misturar dados de Felipe e Sara.
+- [x] Atualizar cards e tabela de Investimentos para mostrar aporte mensal e patrimônio acumulado com rótulos claros.
+- [x] Atualizar a visão Casal com aportes do mês e patrimônio consolidado.
+- [x] Preservar caixinhas da Sara como saldo/progresso acumulado, sem zerar na troca de mês.
+- [x] Adicionar testes para meses sem aporte, investimentos antigos, perfis e estados vazios.
+- [x] Validar check, testes, build e responsividade sem alterar dados existentes.
