@@ -314,3 +314,11 @@
 - [x] Adaptar a área de fatura quando não houver cartão cadastrado.
 - [x] Adicionar testes de presença, rótulo e callback das ações vazias.
 - [x] Validar os dois temas, desktop/mobile, check, testes e build.
+
+## Contextualização do resultado acumulado em Investimentos
+
+- [x] Auditar a origem do valor investido e do valor de mercado usados no card.
+- [x] Detectar aporte positivo com valor de mercado zerado no período e filtros ativos.
+- [x] Exibir aviso discreto abaixo de Resultado acumulado sem mascarar o cálculo.
+- [x] Adicionar testes para mercado desatualizado, ativo normal e múltiplos ativos.
+- [x] Validar temas, responsividade, check, testes e build.

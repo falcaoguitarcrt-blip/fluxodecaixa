@@ -775,3 +775,22 @@ h2 { margin-bottom: 0; color: #f0f4f5; font-family: 'Playfair Display', serif; f
   .app-shell .empty-state { min-height: 240px; padding: 24px 18px; }
   .app-shell .empty-state .action-btn { width: 100%; max-width: 240px; }
 }
+
+
+.app-shell .stat-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--border-soft) 75%, transparent);
+  padding-top: 9px;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.app-shell .stat-notice svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: #b18a32;
+}
+.app-shell:not(.light-mode) .stat-notice svg { color: #e4c86f; }
