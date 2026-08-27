@@ -341,3 +341,12 @@
 - [x] Auditar comportamento responsivo da sidebar, grids e tabelas abaixo de 768 px.
 - [x] Validar desktop, tablet e mobile com evidências visuais sem aplicar correções.
 - [x] Gerar relatório priorizado com achados, impacto e recomendações antes de corrigir.
+
+## Confirmação da consolidação Casal na Visão Geral
+
+- [x] Auditar a query e o helper usados pelos KPIs da Visão Geral quando o perfil Casal está ativo.
+- [x] Comparar com a fonte de dados e o cálculo da aba dedicada Casal no mesmo período.
+- [x] Unificar a fonte de verdade se houver qualquer divergência de lógica ou query.
+- [x] Adicionar ou atualizar teste automatizado de equivalência dos quatro KPIs.
+- [x] Validar visualmente a Visão Geral com Casal selecionado e capturar print para conferência.
+- [x] Registrar o resultado e salvar checkpoint.
