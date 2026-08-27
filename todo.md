@@ -331,3 +331,13 @@
 - [x] Priorizar Atrasadas na primeira posição quando o total for maior que zero.
 - [x] Adicionar testes de estado, ordem e neutralidade quando o total for zero.
 - [x] Validar responsividade, check, testes e build.
+
+## Auditoria geral de acessibilidade e responsividade
+
+- [x] Mapear as cinco abas e seus componentes interativos, grades, tabelas e navegação.
+- [x] Auditar contraste WCAG AA e uso de tokens semânticos em estados claro e escuro.
+- [x] Auditar áreas clicáveis mínimas de 44×44 px e estados de foco visível.
+- [x] Auditar navegação por teclado nos seletores de período e perfil e demais controles.
+- [x] Auditar comportamento responsivo da sidebar, grids e tabelas abaixo de 768 px.
+- [x] Validar desktop, tablet e mobile com evidências visuais sem aplicar correções.
+- [x] Gerar relatório priorizado com achados, impacto e recomendações antes de corrigir.
