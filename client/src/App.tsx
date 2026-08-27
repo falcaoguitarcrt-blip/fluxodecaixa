@@ -1,9 +1,21 @@
-// Fluxo Pessoal — direção editorial fintech escura: navegação persistente, contraste elevado e estados por cor.
+// Fluxo Pessoal — shell do dashboard com autenticação Manus e navegação responsiva personalizada.
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ThemeProvider } from "./contexts/ThemeContext";
+import NotFound from "@/pages/NotFound";
+import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+
+function Router() {
+  return (
+    <Switch>
+      <Route path="/" component={Home} />
+      <Route path="/404" component={NotFound} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
 
 export default function App() {
   return (
@@ -11,7 +23,7 @@ export default function App() {
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster theme="dark" position="bottom-right" />
-          <Home />
+          <Router />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
