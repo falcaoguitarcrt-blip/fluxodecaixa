@@ -49,6 +49,23 @@ export const investments = mysqlTable("investments", {
   id: int("id").autoincrement().primaryKey(), userId: int("userId").notNull(), profileId: int("profileId").notNull(), description: varchar("description", { length: 180 }).notNull(), category: varchar("category", { length: 80 }).notNull(), institution: varchar("institution", { length: 80 }).notNull(), investedAmount: decimal("investedAmount", { precision: 12, scale: 2 }).notNull(), marketValue: decimal("marketValue", { precision: 12, scale: 2 }).notNull(), investedAt: timestamp("investedAt").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({ ownerDateIdx: index("investments_owner_date_idx").on(table.userId, table.investedAt) }));
 
+export const savingsGoals = mysqlTable("savings_goals", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  profileId: int("profileId").notNull(),
+  name: varchar("name", { length: 120 }).notNull(),
+  category: varchar("category", { length: 80 }).notNull(),
+  targetAmount: decimal("targetAmount", { precision: 12, scale: 2 }).notNull(),
+  currentAmount: decimal("currentAmount", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  targetDate: timestamp("targetDate"),
+  notes: text("notes"),
+  status: mysqlEnum("status", ["active", "archived"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({ ownerIdx: index("savings_goals_owner_idx").on(table.userId, table.profileId, table.status) }));
+
+export type SavingsGoal = typeof savingsGoals.$inferSelect;
+
 export const creditCards = mysqlTable("credit_cards", {
   id: int("id").autoincrement().primaryKey(), userId: int("userId").notNull(), profileId: int("profileId").notNull(), name: varchar("name", { length: 100 }).notNull(), brand: varchar("brand", { length: 40 }).notNull(), dueDay: int("dueDay").notNull(), closingDay: int("closingDay").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({ ownerIdx: index("credit_cards_owner_idx").on(table.userId) }));

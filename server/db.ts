@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, bills, cardPurchases, creditCards, financeProfiles, investments, transactions, trashItems, recurringRules, budgets, reminders, financeAuditLogs, financeBackups } from "../drizzle/schema";
+import { InsertUser, users, bills, cardPurchases, creditCards, financeProfiles, investments, transactions, trashItems, recurringRules, budgets, reminders, financeAuditLogs, financeBackups, savingsGoals } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import type { CsvTransaction } from "../shared/financeCsv";
 
@@ -150,7 +150,7 @@ export async function ensureFinanceProfiles(userId: number) {
 
 export async function listFinanceData(userId: number, profileId?: number) {
   const db = await getDb();
-  if (!db) return { profiles: [], transactions: [], bills: [], investments: [], cards: [], purchases: [], trash: [] };
+  if (!db) return { profiles: [], transactions: [], bills: [], investments: [], cards: [], purchases: [], trash: [], recurring: [], budgets: [], reminders: [], savingsGoals: [] };
   const profiles = await ensureFinanceProfiles(userId);
   const txWhere = profileId ? and(eq(transactions.userId, userId), eq(transactions.profileId, profileId)) : eq(transactions.userId, userId);
   const billWhere = profileId ? and(eq(bills.userId, userId), eq(bills.profileId, profileId)) : eq(bills.userId, userId);
@@ -160,7 +160,8 @@ export async function listFinanceData(userId: number, profileId?: number) {
   const recurringWhere = profileId ? and(eq(recurringRules.userId, userId), eq(recurringRules.profileId, profileId)) : eq(recurringRules.userId, userId);
   const budgetWhere = profileId ? and(eq(budgets.userId, userId), eq(budgets.profileId, profileId)) : eq(budgets.userId, userId);
   const reminderWhere = profileId ? and(eq(reminders.userId, userId), eq(reminders.profileId, profileId)) : eq(reminders.userId, userId);
-  const [tx, billRows, investmentRows, cardRows, purchaseRows, trashRows, recurringRows, budgetRows, reminderRows] = await Promise.all([
+  const savingsGoalWhere = profileId ? and(eq(savingsGoals.userId, userId), eq(savingsGoals.profileId, profileId)) : eq(savingsGoals.userId, userId);
+  const [tx, billRows, investmentRows, cardRows, purchaseRows, trashRows, recurringRows, budgetRows, reminderRows, savingsGoalRows] = await Promise.all([
     db.select().from(transactions).where(txWhere).orderBy(desc(transactions.date)),
     db.select().from(bills).where(billWhere).orderBy(desc(bills.dueDate)),
     db.select().from(investments).where(investmentWhere).orderBy(desc(investments.investedAt)),
@@ -170,8 +171,9 @@ export async function listFinanceData(userId: number, profileId?: number) {
     db.select().from(recurringRules).where(recurringWhere).orderBy(desc(recurringRules.createdAt)),
     db.select().from(budgets).where(budgetWhere).orderBy(desc(budgets.createdAt)),
     db.select().from(reminders).where(reminderWhere).orderBy(desc(reminders.dueDate)),
+    db.select().from(savingsGoals).where(savingsGoalWhere).orderBy(desc(savingsGoals.createdAt)),
   ]);
-  return { profiles, transactions: tx, bills: billRows, investments: investmentRows, cards: cardRows, purchases: purchaseRows, trash: trashRows, recurring: recurringRows, budgets: budgetRows, reminders: reminderRows };
+  return { profiles, transactions: tx, bills: billRows, investments: investmentRows, cards: cardRows, purchases: purchaseRows, trash: trashRows, recurring: recurringRows, budgets: budgetRows, reminders: reminderRows, savingsGoals: savingsGoalRows };
 }
 
 export async function createTransaction(input: typeof transactions.$inferInsert) {
@@ -194,6 +196,76 @@ async function assertFinanceProfile(userId: number, profileId: number) {
   const profile = await db.select({ id: financeProfiles.id }).from(financeProfiles).where(and(eq(financeProfiles.id, profileId), eq(financeProfiles.userId, userId))).limit(1);
   if (!profile[0]) throw new Error("Perfil financeiro não encontrado");
   return db;
+}
+
+export function calculateSavingsGoalProgress(currentAmount: number | string, targetAmount: number | string) {
+  const current = Number(currentAmount);
+  const target = Number(targetAmount);
+  if (!Number.isFinite(current) || !Number.isFinite(target) || target <= 0) return 0;
+  return Math.min(100, Math.max(0, (current / target) * 100));
+}
+
+export function assertSavingsGoalProfile(profileKey: string) {
+  if (profileKey !== "sara") throw new Error("As caixinhas pertencem ao perfil Sara");
+  return true;
+}
+
+export function assertSavingsGoalAccess(profile: { id: number; userId: number; profileKey: string }, userId: number, profileId: number) {
+  if (profile.userId !== userId || profile.id !== profileId) throw new Error("Perfil financeiro não encontrado");
+  assertSavingsGoalProfile(profile.profileKey);
+  return true;
+}
+
+async function assertSaraProfile(userId: number, profileId: number) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const profile = await db.select({ id: financeProfiles.id, userId: financeProfiles.userId, profileKey: financeProfiles.profileKey }).from(financeProfiles).where(and(eq(financeProfiles.id, profileId), eq(financeProfiles.userId, userId))).limit(1);
+  if (!profile[0]) throw new Error("Perfil financeiro não encontrado");
+  assertSavingsGoalAccess(profile[0], userId, profileId);
+  return db;
+}
+
+export async function listSavingsGoals(userId: number, profileId: number) {
+  const db = await assertSaraProfile(userId, profileId);
+  return db.select().from(savingsGoals).where(and(eq(savingsGoals.userId, userId), eq(savingsGoals.profileId, profileId))).orderBy(desc(savingsGoals.createdAt));
+}
+
+export async function createSavingsGoal(userId: number, input: Omit<typeof savingsGoals.$inferInsert, "userId">) {
+  const db = await assertSaraProfile(userId, input.profileId);
+  const result = await db.insert(savingsGoals).values({ ...input, userId });
+  const id = Number(result[0]?.insertId ?? 0);
+  await recordFinanceAudit({ userId, profileId: input.profileId, action: "create", entityType: "savings_goal", entityId: id, summary: input.name });
+  return id;
+}
+
+export async function updateSavingsGoal(userId: number, id: number, input: Partial<Omit<typeof savingsGoals.$inferInsert, "userId" | "profileId">>) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const current = await db.select().from(savingsGoals).where(and(eq(savingsGoals.id, id), eq(savingsGoals.userId, userId))).limit(1);
+  if (!current[0]) throw new Error("Caixinha não encontrada");
+  await assertSaraProfile(userId, current[0].profileId);
+  await db.update(savingsGoals).set(input).where(and(eq(savingsGoals.id, id), eq(savingsGoals.userId, userId)));
+  const updated = await db.select().from(savingsGoals).where(and(eq(savingsGoals.id, id), eq(savingsGoals.userId, userId))).limit(1);
+  if (updated[0]) await recordFinanceAudit({ userId, profileId: updated[0].profileId, action: "update", entityType: "savings_goal", entityId: id, summary: updated[0].name });
+  return updated;
+}
+
+export async function archiveSavingsGoal(userId: number, id: number) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const current = await db.select().from(savingsGoals).where(and(eq(savingsGoals.id, id), eq(savingsGoals.userId, userId))).limit(1);
+  if (!current[0]) throw new Error("Caixinha não encontrada");
+  await assertSaraProfile(userId, current[0].profileId);
+  await db.update(savingsGoals).set({ status: "archived" }).where(and(eq(savingsGoals.id, id), eq(savingsGoals.userId, userId)));
+  await recordFinanceAudit({ userId, profileId: current[0].profileId, action: "archive", entityType: "savings_goal", entityId: id, summary: current[0].name });
+  return true;
+}
+
+export async function deleteSavingsGoal(userId: number, id: number) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const current = await db.select().from(savingsGoals).where(and(eq(savingsGoals.id, id), eq(savingsGoals.userId, userId))).limit(1);
+  if (!current[0]) throw new Error("Caixinha não encontrada");
+  await assertSaraProfile(userId, current[0].profileId);
+  await db.delete(savingsGoals).where(and(eq(savingsGoals.id, id), eq(savingsGoals.userId, userId)));
+  await recordFinanceAudit({ userId, profileId: current[0].profileId, action: "delete", entityType: "savings_goal", entityId: id, summary: current[0].name });
+  return true;
 }
 
 export async function createBill(userId: number, input: Omit<typeof bills.$inferInsert, "userId">) {

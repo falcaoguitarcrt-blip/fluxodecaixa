@@ -59,7 +59,7 @@ describe("finance procedures", () => {
   });
 });
 
-import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, resolveBillStatus, buildBillAlertSummary, dedupeTransactionRows, restoreFinanceSnapshot } from "./db";
+import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, resolveBillStatus, buildBillAlertSummary, dedupeTransactionRows, restoreFinanceSnapshot, calculateSavingsGoalProgress, assertSavingsGoalProfile, assertSavingsGoalAccess } from "./db";
 import { parseFinanceCsv, serializeFinanceCsv } from "../shared/financeCsv";
 
 describe("finance calculations", () => {
@@ -257,4 +257,27 @@ describe("priority 7 form contracts", () => {
       installments: 2,
       currentInstallment: 3,
     })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("validates savings goal amounts before database access", async () => {
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.finance.createSavingsGoal({ profileId: 1, name: "Reserva", category: "Segurança", targetAmount: 0, currentAmount: 0 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.finance.createSavingsGoal({ profileId: 1, name: "Reserva", category: "Segurança", targetAmount: 1000, currentAmount: -1 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("calculates savings goal progress and caps completed goals at 100%", () => {
+    expect(calculateSavingsGoalProgress("250.00", "1000.00")).toBe(25);
+    expect(calculateSavingsGoalProgress(1250, 1000)).toBe(100);
+    expect(calculateSavingsGoalProgress(100, 0)).toBe(0);
+  });
+
+  it("rejects non-Sara and cross-user profiles through the savings goal access gate", async () => {
+    expect(() => assertSavingsGoalProfile("felipe")).toThrow("perfil Sara");
+    expect(assertSavingsGoalProfile("sara")).toBe(true);
+    expect(() => assertSavingsGoalAccess({ id: 2, userId: 1, profileKey: "felipe" }, 1, 2)).toThrow("perfil Sara");
+    expect(() => assertSavingsGoalAccess({ id: 2, userId: 99, profileKey: "sara" }, 1, 2)).toThrow("Perfil financeiro não encontrado");
+    expect(assertSavingsGoalAccess({ id: 2, userId: 1, profileKey: "sara" }, 1, 2)).toBe(true);
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.finance.savingsGoals({ profileId: 1, profileKey: "felipe" } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.finance.createSavingsGoal({ profileId: 1, profileKey: "felipe", name: "Reserva", category: "Segurança", targetAmount: 1000, currentAmount: 0 } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });

@@ -266,3 +266,18 @@ h2 { margin-bottom: 0; color: #f0f4f5; font-family: 'Playfair Display', serif; f
 .compact-header { min-height: 137px; }.compact-header .workspace-title h1 { font-size: clamp(32px, 3.2vw, 44px); }.compact-header .workspace-title p { display: none; }
 .goal-metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; margin-top: 21px; }.goal-metrics > div { border: 1px solid rgba(214,176,224,.14); border-radius: 10px; background: rgba(18,15,27,.27); padding: 11px 12px; }.goal-metrics span { display: block; color: #9c8fa3; font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }.goal-metrics strong { display: block; margin-top: 6px; color: #eadcf0; font-family: 'Playfair Display',serif; font-size: 17px; }
 @media (max-width: 720px) { .header-settings-panel { width: 100%; }.compact-header { min-height: 0; }.goal-metrics { gap: 6px; }.goal-metrics > div { padding: 9px 7px; }.goal-metrics strong { font-size: 14px; } }
+
+.goal-list { display: grid; gap: 10px; margin-top: 20px; }
+.goal-row { border: 1px solid rgba(214,176,224,.16); border-radius: 12px; background: rgba(18,15,27,.34); padding: 13px 14px; }
+.goal-row-top, .goal-row-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.goal-row-top strong { display: block; color: #f0e3f4; font-size: 13px; }
+.goal-row-top span, .goal-row-bottom span { display: block; margin-top: 4px; color: #a99bad; font-size: 10px; }
+.goal-row-actions { display: flex; gap: 5px; }
+.goal-row-actions .square-btn { border-color: rgba(214,176,224,.22); color: #cbb0d5; }
+.goal-progress-track { height: 7px; margin-top: 13px; overflow: hidden; border-radius: 999px; background: rgba(214,176,224,.12); }
+.goal-progress-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #9b67b9, #dfb4e9); transition: width 220ms ease-out; }
+.goal-row-bottom { margin-top: 8px; }
+.goal-row-bottom span { margin-top: 0; }
+.goal-row-bottom strong { color: #e6c1ee; font-size: 12px; }
+.goal-archived-note { margin: 17px 0 0; color: #9f94a6; font-size: 11px; }
+@media (max-width: 720px) { .goal-row { padding: 11px; }.goal-row-top { align-items: flex-start; }.goal-row-bottom span { font-size: 9px; } }

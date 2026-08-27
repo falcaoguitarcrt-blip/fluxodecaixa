@@ -149,3 +149,23 @@
 - [x] Adicionar refinamento server-side em compras de cartão para garantir `currentInstallment <= installments` também via API.
 - [x] Adicionar testes Vitest para a regra server-side de parcelas inconsistentes.
 - [ ] Validar manualmente os modais abertos em uma sessão autenticada, em desktop e mobile, pois a prévia sandbox atual está sem login.
+
+## Prioridade 8 — Minhas Caixinhas da Sara
+
+- [x] Criar tabela persistente de objetivos de caixinha vinculada ao usuário e perfil Sara.
+- [x] Adicionar operações protegidas para listar, criar, editar, arquivar e excluir caixinhas, com validação de perfil.
+- [x] Registrar criações, edições, arquivamentos e exclusões de caixinhas no histórico de auditoria.
+- [x] Incluir caixinhas no snapshot de backup e manter a restauração geral explicitamente limitada a lançamentos.
+- [x] Implementar formulário persistente com nome do objetivo, categoria, meta, valor guardado, prazo e observações.
+- [x] Exibir métricas reais de objetivos ativos, valor guardado e progresso, com estado vazio honesto.
+- [x] Conectar a seção condicional de Sara ao cadastro, edição e arquivamento de caixinhas.
+- [x] Adicionar testes de validação, cálculo de progresso, isolamento por perfil e contratos tRPC; a validação de isolamento com banco real permanece manual.
+- [x] Validar migração aplicada, check, 28 testes, build e responsividade desktop/mobile.
+
+## Fechamento da Prioridade 8
+
+- [x] Adicionar teste automatizado da barreira de acesso Sara e do contrato de listagem para perfil inválido; a validação com IDs reais de outro usuário permanece protegida pelo helper de acesso e fica como verificação manual autenticada.
+
+## Cobertura adicional de acesso da Prioridade 8
+
+- [x] Cobrir os contratos tRPC com rejeição direta de chamadas declaradas para perfil Felipe e cobrir a regra compartilhada para perfil Felipe válido e perfil pertencente a outro usuário; a confirmação com registros reais permanece manual autenticada.
