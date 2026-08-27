@@ -78,7 +78,7 @@ describe("finance procedures", () => {
   });
 });
 
-import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, billStatusAuditAction, resolveBillStatus, buildBillAlertSummary, dedupeTransactionRows, restoreFinanceSnapshot, calculateSavingsGoalProgress, assertSavingsGoalProfile, assertSavingsGoalAccess, buildCoupleDashboard, buildCoupleDashboardForUser, buildCardStatementDetails } from "./db";
+import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, billStatusAuditAction, resolveBillStatus, buildBillAlertSummary, dedupeTransactionRows, restoreFinanceSnapshot, calculateSavingsGoalProgress, assertSavingsGoalProfile, assertSavingsGoalAccess, buildCoupleDashboard, buildCoupleDashboardForUser, buildCardStatementDetails, recurringOccurrenceDate, isRecurringRuleActiveInMonth } from "./db";
 import { parseFinanceCsv, serializeFinanceCsv } from "../shared/financeCsv";
 
 describe("finance calculations", () => {
@@ -234,6 +234,25 @@ describe("finance filters", () => {
   it("returns created and skipped counts for a valid CSV import", async () => {
     const caller = appRouter.createCaller(createContext());
     await expect(caller.finance.importTransactions({ profileId: 1, rows: [{ date: "2026-08-21", description: "Mercado", category: "Casa", bank: "Inter", direction: "out", amount: 35.5 }] })).resolves.toEqual({ created: 2, skipped: 1 });
+  });
+});
+
+describe("recurring transaction materialization rules", () => {
+  it("creates a civil occurrence and clamps day 31 to shorter months", () => {
+    expect(recurringOccurrenceDate({ dayOfMonth: 31, startDate: new Date("2026-01-01T12:00:00Z"), endDate: null }, "2026-02")?.toISOString()).toBe("2026-02-28T12:00:00.000Z");
+  });
+
+  it("respects exact start/end dates and inactive rules", () => {
+    const rule = { dayOfMonth: 20, startDate: new Date("2026-08-15T12:00:00Z"), endDate: new Date("2026-10-15T12:00:00Z") };
+    expect(recurringOccurrenceDate({ ...rule, dayOfMonth: 10 }, "2026-08")).toBeNull();
+    expect(recurringOccurrenceDate(rule, "2026-09")?.toISOString()).toBe("2026-09-20T12:00:00.000Z");
+    expect(recurringOccurrenceDate(rule, "2026-10")).toBeNull();
+    expect(isRecurringRuleActiveInMonth({ ...rule, active: 1 }, "2026-09")).toBe(true);
+    expect(isRecurringRuleActiveInMonth({ ...rule, active: 0 }, "2026-09")).toBe(false);
+  });
+
+  it("rejects invalid competence before any materialization attempt", () => {
+    expect(() => recurringOccurrenceDate({ dayOfMonth: 1, startDate: new Date("2026-01-01T12:00:00Z"), endDate: null }, "2026-13")).toThrow("Mês inválido");
   });
 });
 

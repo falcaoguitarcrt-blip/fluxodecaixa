@@ -1,9 +1,9 @@
 import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, bills, cardPurchases, creditCards, financeProfiles, investments, transactions, trashItems, recurringRules, budgets, reminders, financeAuditLogs, financeBackups, savingsGoals, financeCategories } from "../drizzle/schema";
+import { InsertUser, users, bills, cardPurchases, creditCards, financeProfiles, investments, transactions, trashItems, recurringRules, recurringOccurrences, budgets, reminders, financeAuditLogs, financeBackups, savingsGoals, financeCategories } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import type { CsvTransaction } from "../shared/financeCsv";
-import { currentMonthKey, dateKeyFromDate, isDateInMonth, monthStartDate } from "../shared/calendar";
+import { assertMonthKey, currentMonthKey, dateKeyFromDate, isDateInMonth, monthKeyFromDate, monthStartDate } from "../shared/calendar";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -487,6 +487,7 @@ export function filterCardPurchases(rows: Array<typeof cardPurchases.$inferSelec
 }
 
 export async function getFinanceDashboard(userId: number, filters: FinanceFilters = {}) {
+  if (filters.profileId && filters.month) await materializeRecurringTransactions(userId, filters.profileId, filters.month);
   const data = await listFinanceData(userId, filters.profileId);
   const filteredTransactions = filterTransactions(data.transactions, filters);
   const totals = filteredTransactions.reduce((acc, item) => {
@@ -616,7 +617,8 @@ export function buildBudgetSummary(budgetRows: Array<{ month: string; category: 
 export async function listRoutineData(userId: number, profileId: number, month = currentMonthKey()) {
   const db = await getDb();
   if (!db) return { recurring: [], budgets: [], reminders: [], budgetSummary: [], upcomingBills: [], overdueBills: [] };
-  const [recurring, budgetRows, reminderRows, transactionRows, billRows] = await Promise.all([
+  await materializeRecurringTransactions(userId, profileId, month);
+  const [recurringRows, budgetRows, reminderRows, transactionRows, billRows] = await Promise.all([
     db.select().from(recurringRules).where(and(eq(recurringRules.userId, userId), eq(recurringRules.profileId, profileId))).orderBy(desc(recurringRules.dayOfMonth)),
     db.select().from(budgets).where(and(eq(budgets.userId, userId), eq(budgets.profileId, profileId))).orderBy(desc(budgets.month)),
     db.select().from(reminders).where(and(eq(reminders.userId, userId), eq(reminders.profileId, profileId))).orderBy(desc(reminders.dueDate)),
@@ -625,12 +627,61 @@ export async function listRoutineData(userId: number, profileId: number, month =
   ]);
   const { upcomingBills, overdueBills } = buildBillAlertSummary(billRows, new Date(), month);
   const visibleReminders = reminderRows.filter((item) => isDateInMonth(item.dueDate, month));
+  const recurring = recurringRows.filter((rule) => isRecurringRuleActiveInMonth(rule, month));
   return { recurring, budgets: budgetRows, reminders: visibleReminders, budgetSummary: buildBudgetSummary(budgetRows, transactionRows, month), upcomingBills, overdueBills };
 }
 
+export function recurringOccurrenceDate(rule: { dayOfMonth: number; startDate: Date; endDate: Date | null }, month: string) {
+  assertMonthKey(month);
+  const startMonth = monthKeyFromDate(rule.startDate);
+  const endMonth = rule.endDate ? monthKeyFromDate(rule.endDate) : null;
+  if (month < startMonth || (endMonth !== null && month > endMonth)) return null;
+  const [year, monthNumber] = month.split("-").map(Number);
+  const lastDay = new Date(Date.UTC(year, monthNumber, 0, 12)).getUTCDate();
+  const occurrenceDate = new Date(Date.UTC(year, monthNumber - 1, Math.min(rule.dayOfMonth, lastDay), 12));
+  const occurrenceKey = dateKeyFromDate(occurrenceDate);
+  if (occurrenceKey < dateKeyFromDate(rule.startDate)) return null;
+  if (rule.endDate && occurrenceKey > dateKeyFromDate(rule.endDate)) return null;
+  return occurrenceDate;
+}
+
+export function isRecurringRuleActiveInMonth(rule: { active: number; dayOfMonth: number; startDate: Date; endDate: Date | null }, month: string) {
+  return rule.active === 1 && recurringOccurrenceDate(rule, month) !== null;
+}
+
+export async function materializeRecurringTransactions(userId: number, profileId: number, month: string) {
+  const db = await assertFinanceProfile(userId, profileId);
+  assertMonthKey(month);
+  const rules = await db.select().from(recurringRules).where(and(eq(recurringRules.userId, userId), eq(recurringRules.profileId, profileId), eq(recurringRules.active, 1)));
+  const created: number[] = [];
+  for (const rule of rules) {
+    const occurrenceDate = recurringOccurrenceDate(rule, month);
+    if (!occurrenceDate) continue;
+    try {
+      const transactionId = await db.transaction(async (tx) => {
+        const transactionResult = await tx.insert(transactions).values({ userId, profileId, date: occurrenceDate, description: rule.description, category: rule.category, bank: rule.bank, direction: rule.direction, amount: rule.amount, notes: `Gerado pela recorrência #${rule.id}` });
+        const id = Number(transactionResult[0]?.insertId ?? 0);
+        await tx.insert(recurringOccurrences).values({ userId, profileId, ruleId: rule.id, transactionId: id, month });
+        return id;
+      });
+      if (transactionId) {
+        created.push(transactionId);
+        await recordFinanceAudit({ userId, profileId, action: "materialize", entityType: "recurring_transaction", entityId: transactionId, summary: `${rule.description} · ${month}` });
+      }
+    } catch (error) {
+      const code = typeof error === "object" && error !== null && "code" in error ? String((error as { code?: unknown }).code) : "";
+      if (code !== "ER_DUP_ENTRY") throw error;
+    }
+  }
+  return { month, profileId, created, createdCount: created.length };
+}
+
 export async function createRecurringRule(input: typeof recurringRules.$inferInsert) {
-  const db = await getDb(); if (!db) throw new Error("Database unavailable");
-  const result = await db.insert(recurringRules).values(input); return result[0]?.insertId;
+  const db = await assertFinanceProfile(input.userId, input.profileId);
+  const result = await db.insert(recurringRules).values(input);
+  const id = Number(result[0]?.insertId ?? 0);
+  await recordFinanceAudit({ userId: input.userId, profileId: input.profileId, action: "create", entityType: "recurring_rule", entityId: id, summary: input.description });
+  return id;
 }
 
 export async function createBudget(input: typeof budgets.$inferInsert) {

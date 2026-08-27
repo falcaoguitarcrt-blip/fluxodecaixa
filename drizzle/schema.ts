@@ -1,4 +1,4 @@
-import { decimal, index, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { decimal, index, int, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -150,7 +150,19 @@ export const reminders = mysqlTable("reminders", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({ ownerDueIdx: index("reminders_owner_due_idx").on(table.userId, table.profileId, table.dueDate) }));
 
+export const recurringOccurrences = mysqlTable("recurring_occurrences", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  profileId: int("profileId").notNull(),
+  ruleId: int("ruleId").notNull(),
+  transactionId: int("transactionId"),
+  month: varchar("month", { length: 7 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({ ruleMonthUnique: uniqueIndex("recurring_occurrences_rule_month_uq").on(table.ruleId, table.month), ownerMonthIdx: index("recurring_occurrences_owner_month_idx").on(table.userId, table.profileId, table.month) }));
+
 export type RecurringRule = typeof recurringRules.$inferSelect;
+export type RecurringOccurrence = typeof recurringOccurrences.$inferSelect;
 export type Budget = typeof budgets.$inferSelect;
 export type Reminder = typeof reminders.$inferSelect;
 

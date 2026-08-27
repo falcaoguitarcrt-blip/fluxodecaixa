@@ -243,3 +243,13 @@
 - [x] Corrigir estados visuais para refletir status derivado sem permitir inconsistência entre status salvo e status exibido.
 - [x] Adicionar testes de isolamento por perfil, pagamento/reabertura, auditoria e cache lógico.
 - [x] Validar check, testes, build e responsividade sem alterar dados financeiros existentes.
+
+## Prioridade 3 da auditoria — recorrências mensais idempotentes
+
+- [x] Revisar o modelo atual de regras recorrentes, lançamentos e vínculo de perfil.
+- [x] Definir identidade única por regra recorrente, competência e ocorrência.
+- [x] Materializar ocorrências somente para o usuário/perfil autorizado e mês solicitado.
+- [x] Evitar duplicidades em chamadas repetidas e preservar edição/status da ocorrência criada.
+- [x] Integrar a materialização ao bootstrap e à tela Contas sem misturar fluxos financeiros.
+- [x] Adicionar testes de mês, datas-limite, perfil, idempotência e duplicidade.
+- [x] Validar migração, check, testes, build e responsividade sem alterar dados existentes.
