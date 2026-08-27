@@ -43,6 +43,7 @@ import { toast } from "sonner";
 import { parseFinanceCsv, serializeFinanceCsv } from "@shared/financeCsv";
 import type { CsvRejection } from "@shared/financeCsv";
 import { currentMonthKey, dateKeyFromDate, formatMonthLabel, isDateInMonth, monthOptions as buildMonthOptions, monthStartDate } from "@shared/calendar";
+import { selectSummaryForPerson } from "@shared/coupleSummary";
 
 const MARK_URL = "/manus-storage/fluxo-mark_57de0095.png";
 const NOISE_URL = "/manus-storage/fluxo-noise_4fec77aa.png";
@@ -577,6 +578,8 @@ export default function Home() {
   const activeProfileId = person === "Casal" ? undefined : profilesQuery.data?.find((profile) => profile.profileKey === person.toLowerCase())?.id;
   const [activeMonth, setActiveMonth] = useState(() => currentMonthKey());
   const financeQuery = trpc.finance.bootstrap.useQuery({ profileId: activeProfileId, month: activeMonth }, { enabled: isAuthenticated && !!activeProfileId });
+  const coupleQuery = trpc.finance.couple.useQuery({ month: activeMonth }, { enabled: isAuthenticated && person === "Casal" });
+  const overviewSummary = selectSummaryForPerson(person, financeQuery.data?.summary, coupleQuery.data?.summary);
   const { theme, toggleTheme } = useTheme();
   const [formState, setFormState] = useState<{ kind: FinanceFormKind; item?: FinanceFormItem } | null>(null);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
@@ -602,7 +605,7 @@ export default function Home() {
     if (active === "cards") return <Cards profileId={activeProfileId} month={activeMonth} onAddCard={() => openForm("card")} onAddPurchase={() => openForm("purchase")} onEditCard={(item) => openForm("card", item)} onEditPurchase={(item) => openForm("purchase", item)} />;
     if (active === "trash") return <Trash profileId={activeProfileId} />;
     if (active === "couple") return <Couple month={activeMonth} />;
-    return <Overview onAdd={() => openForm("transaction")} onAddBill={() => openForm("bill")} onAddInvestment={() => openForm("investment")} onAddCard={() => openForm("card")} onEdit={(item) => openForm("transaction", item)} onDelete={deleteTransactionFromUi} onManageCategories={openCategories} profileId={activeProfileId} month={activeMonth} summary={financeQuery.data?.summary} />;
-  }, [active, activeProfileId, activeMonth, person, financeQuery.data, openForm, deleteTransactionFromUi, openCategories]);
+    return <Overview onAdd={() => openForm("transaction")} onAddBill={() => openForm("bill")} onAddInvestment={() => openForm("investment")} onAddCard={() => openForm("card")} onEdit={(item) => openForm("transaction", item)} onDelete={deleteTransactionFromUi} onManageCategories={openCategories} profileId={activeProfileId} month={activeMonth} summary={overviewSummary} />;
+  }, [active, activeProfileId, activeMonth, person, financeQuery.data, coupleQuery.data, overviewSummary, openForm, deleteTransactionFromUi, openCategories]);
   return <div className={`app-shell profile-${person.toLowerCase()} ${theme === "light" ? "light-mode" : ""}`}><Sidebar active={active} onChange={setActive} person={person} profileId={activeProfileId} month={activeMonth} onPersonChange={(next) => { setPerson(next); toast.success(`Fluxo ${next} ativo`); }} /><main className="main-shell"><header className="mobile-header"><button className="header-icon"><Menu className="h-5 w-5" /></button><Logo /><div className="flex items-center gap-2"><button className="header-icon" onClick={() => toggleTheme?.()} aria-label="Alternar tema">{theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button><button className="header-icon"><Bell className="h-4 w-4" /></button></div></header><div className="desktop-topbar"><div><span className="topbar-status" /><span>{financeQuery.isFetching ? "sincronizando" : isAuthenticated ? "dados persistidos" : "modo demonstração"}</span></div><div className="flex items-center gap-3"><button onClick={() => toggleTheme?.()} className="topbar-link">{theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />} modo {theme === "dark" ? "claro" : "escuro"}</button><button className="topbar-link" onClick={openCategories}><Settings2 className="h-4 w-4" /> preferências</button>{isAuthenticated ? <button onClick={() => logout()} className="topbar-link">{user?.name ?? "sair"}</button> : <button onClick={() => startLogin()} className="topbar-link">entrar</button>}</div></div><div className="page-content"><WorkspaceHeader active={active} person={person} month={activeMonth} onMonthChange={setActiveMonth} onPersonChange={(next) => { setPerson(next); toast.success(`Fluxo ${next} ativo`); }} onAdd={() => openForm("transaction")} theme={theme} onToggleTheme={() => toggleTheme?.()} />{content}</div></main><MobileNav active={active} onChange={setActive} /><button className="floating-add" onClick={() => openForm("transaction")} aria-label="Adicionar movimentação"><Plus className="h-7 w-7" /></button>{formState && <FinanceFormModal kind={formState.kind} item={formState.item} profileId={activeProfileId} cards={(financeQuery.data?.cards ?? []).map((card) => ({ id: card.id, name: card.name }))} onClose={() => setFormState(null)} onDelete={deleteTransactionFromUi} />}{categoriesOpen && activeProfileId && <CategoriesManager profileId={activeProfileId} onClose={() => setCategoriesOpen(false)} />}</div>;
 }

@@ -289,3 +289,11 @@
 - [x] Validar cards de KPI, gráfico de barras, Palavra do período, lançamentos, investimentos e cartão nos dois temas.
 - [x] Verificar contraste mínimo AA de textos, valores, uppercase e legendas.
 - [x] Executar testes, check, build e validação desktop/mobile.
+
+## Correção — fonte única do consolidado Casal
+
+- [x] Auditar a Visão Geral e a aba Casal para localizar a divergência de fonte ou filtro.
+- [x] Reutilizar uma única função de consolidação para os dois caminhos.
+- [x] Garantir que o perfil Casal some Felipe e Sara no mês selecionado, sem fallback zero indevido.
+- [x] Adicionar teste automatizado de equivalência dos KPIs entre Visão Geral e aba Casal.
+- [x] Executar check, testes, build e validação visual desktop/mobile.

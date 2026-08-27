@@ -80,8 +80,21 @@ describe("finance procedures", () => {
 
 import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, billStatusAuditAction, resolveBillStatus, buildBillAlertSummary, dedupeTransactionRows, restoreFinanceSnapshot, calculateSavingsGoalProgress, assertSavingsGoalProfile, assertSavingsGoalAccess, buildCoupleDashboard, buildCoupleDashboardForUser, buildCardStatementDetails, recurringOccurrenceDate, isRecurringRuleActiveInMonth, summarizeInvestments } from "./db";
 import { parseFinanceCsv, serializeFinanceCsv } from "../shared/financeCsv";
+import { selectSummaryForPerson } from "../shared/coupleSummary";
 
 describe("finance calculations", () => {
+  it("uses the same consolidated Casal summary in Overview and Couple views", () => {
+    const couple = buildCoupleDashboard([
+      { profileKey: "felipe", displayName: "Felipe", profileId: 1, userId: 1, summary: { income: 148.84, expenses: 0, balance: 148.84, invested: 0, investedAmount: 0, monthlyContribution: 0, billsPending: 0, cardInstallments: 0, cardTotal: 0 }, cards: [], purchases: [], investments: [], bills: [] },
+      { profileKey: "sara", displayName: "Sara", profileId: 2, userId: 1, summary: { income: 50, expenses: 10, balance: 40, invested: 20, investedAmount: 20, monthlyContribution: 20, billsPending: 15, cardInstallments: 5, cardTotal: 10 }, cards: [], purchases: [], investments: [], bills: [] },
+    ]);
+    const coupleScreenSummary = couple.summary;
+    const overviewScreenSummary = selectSummaryForPerson("Casal", { income: 0, expenses: 0, balance: 0, invested: 0, investedAmount: 0, monthlyContribution: 0, billsPending: 0, cardInstallments: 0, cardTotal: 0, commitment: 0 }, coupleScreenSummary);
+    expect(overviewScreenSummary).toBe(coupleScreenSummary);
+    expect(overviewScreenSummary).toMatchObject({ income: 198.84, expenses: 10, balance: 188.84, invested: 20, billsPending: 15, cardInstallments: 5 });
+    expect(overviewScreenSummary?.commitment).toBe(coupleScreenSummary.commitment);
+  });
+
   it("validates calendar months and preserves civil date keys", () => {
     expect(isValidMonthKey("2026-08")).toBe(true);
     expect(isValidMonthKey("2026-00")).toBe(false);
