@@ -2,6 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, bills, cardPurchases, creditCards, financeProfiles, investments, transactions, trashItems, recurringRules, budgets, reminders } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import type { CsvTransaction } from "../shared/financeCsv";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -130,6 +131,30 @@ export async function updateTransaction(userId: number, id: number, input: Parti
   const db = await getDb(); if (!db) throw new Error("Database unavailable");
   await db.update(transactions).set(input).where(and(eq(transactions.id, id), eq(transactions.userId, userId)));
   return db.select().from(transactions).where(and(eq(transactions.id, id), eq(transactions.userId, userId))).limit(1);
+}
+
+function transactionSignature(row: { date: Date; description: string; category: string; bank: string; direction: "in" | "out"; amount: string | number }) {
+  return [new Date(row.date).toISOString().slice(0, 10), row.description.trim().toLowerCase(), row.category.trim().toLowerCase(), row.bank.trim().toLowerCase(), row.direction, Number(row.amount).toFixed(2)].join("|");
+}
+
+export function dedupeTransactionRows(existing: Array<{ date: Date; description: string; category: string; bank: string; direction: "in" | "out"; amount: string | number }>, rows: CsvTransaction[]) {
+  const known = new Set(existing.map(transactionSignature));
+  return rows.filter((row) => {
+    const signature = transactionSignature({ ...row, date: new Date(`${row.date}T12:00:00.000Z`) });
+    if (known.has(signature)) return false;
+    known.add(signature);
+    return true;
+  });
+}
+
+export async function bulkCreateTransactions(userId: number, profileId: number, rows: CsvTransaction[]) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const existing = await db.select({ date: transactions.date, description: transactions.description, category: transactions.category, bank: transactions.bank, direction: transactions.direction, amount: transactions.amount }).from(transactions).where(and(eq(transactions.userId, userId), eq(transactions.profileId, profileId)));
+  const uniqueRows = dedupeTransactionRows(existing, rows);
+  if (uniqueRows.length > 0) {
+    await db.insert(transactions).values(uniqueRows.map((row) => ({ userId, profileId, date: new Date(`${row.date}T12:00:00.000Z`), description: row.description, category: row.category, bank: row.bank, direction: row.direction, amount: row.amount.toFixed(2) })));
+  }
+  return { created: uniqueRows.length, skipped: rows.length - uniqueRows.length };
 }
 
 export async function deleteTransaction(userId: number, id: number) {

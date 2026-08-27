@@ -176,3 +176,10 @@ h2 { margin-bottom: 0; color: #f0f4f5; font-family: 'Playfair Display', serif; f
 .empty-state h2 { font-size: 21px; }
 .empty-state p { max-width: 340px; margin-bottom: 0; color: #8194a1; font-size: 12px; line-height: 1.6; }
 @media (max-width: 720px) { .trash-row { padding: 13px; }.trash-row .restore-btn { margin-left: auto; }.empty-state { min-height: 240px; } }
+
+.import-report{margin-top:1rem;border:1px solid rgba(116,155,190,.28);border-radius:16px;padding:1rem;background:rgba(19,34,49,.72)}
+.import-report h3{font-family:var(--font-display,Georgia,serif);font-size:1.15rem;color:#f2f4f7}
+.import-errors{display:grid;gap:.55rem;margin-top:.85rem;max-height:220px;overflow:auto}
+.import-errors>div{display:grid;grid-template-columns:auto 1fr;gap:.15rem .65rem;padding:.7rem .8rem;border-radius:10px;background:rgba(120,62,60,.16);border:1px solid rgba(205,137,126,.22);font-size:.78rem}
+.import-errors strong{color:#f0c2b7}.import-errors span{color:#d9a79e}.import-errors code{grid-column:1/-1;color:#9daab8;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:640px){.import-report{padding:.85rem}.import-report h3{font-size:1rem}.import-errors{max-height:180px}}

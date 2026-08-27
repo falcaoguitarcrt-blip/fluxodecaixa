@@ -1,4 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("./db", async () => {
+  const actual = await vi.importActual<typeof import("./db")>("./db");
+  return { ...actual, bulkCreateTransactions: vi.fn().mockResolvedValue({ created: 2, skipped: 1 }) };
+});
+
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
@@ -46,9 +52,15 @@ describe("finance procedures", () => {
       amount: 10,
     })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
+
+  it("accepts a YYYY-MM month in the routine query", async () => {
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.finance.routine({ profileId: 1, month: "2026-08" })).resolves.toMatchObject({ budgetSummary: [] });
+  });
 });
 
-import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, resolveBillStatus, buildBillAlertSummary } from "./db";
+import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, resolveBillStatus, buildBillAlertSummary, dedupeTransactionRows } from "./db";
+import { parseFinanceCsv, serializeFinanceCsv } from "../shared/financeCsv";
 
 describe("finance calculations", () => {
   it("groups card purchases by card and separates installment from total", () => {
@@ -137,5 +149,41 @@ describe("finance filters", () => {
     ], new Date("2026-08-27T12:00:00Z"));
     expect(alerts.overdueBills).toHaveLength(1);
     expect(alerts.upcomingBills[0]?.dueDate.toISOString()).toBe("2026-09-10T12:00:00.000Z");
+  });
+
+  it("parses valid CSV rows and reports malformed rows", () => {
+    const parsed = parseFinanceCsv("data,descrição,categoria,banco,tipo,valor\n2026-08-21,Salário,Renda,Inter,entrada,não\n2026-99-40,Inválido,Casa,Inter,saída,10");
+    expect(parsed.rows).toHaveLength(0);
+    expect(parsed.rejected).toHaveLength(2);
+
+    const valid = parseFinanceCsv("data,descrição,categoria,banco,tipo,valor\n2026-08-21,Salário,Renda,Inter,entrada,1200.00");
+    expect(valid.rows).toEqual([{ date: "2026-08-21", description: "Salário", category: "Renda", bank: "Inter", direction: "in", amount: 1200 }]);
+  });
+
+  it("serializes finance rows with escaped descriptions", () => {
+    const csv = serializeFinanceCsv([{ date: "2026-08-21", description: "Mercado, feira", category: "Casa", bank: "Inter", direction: "out", amount: 35.5 }]);
+    expect(csv).toContain('"Mercado, feira"');
+    expect(csv).toContain("saída");
+  });
+
+  it("deduplicates imports against existing rows and within the same CSV", () => {
+    const rows = [
+      { date: "2026-08-21", description: "Mercado", category: "Casa", bank: "Inter", direction: "out" as const, amount: 35.5 },
+      { date: "2026-08-21", description: "Mercado", category: "Casa", bank: "Inter", direction: "out" as const, amount: 35.5 },
+      { date: "2026-08-22", description: "Salário", category: "Renda", bank: "Inter", direction: "in" as const, amount: 1200 },
+    ];
+    const unique = dedupeTransactionRows([{ ...rows[0], date: new Date("2026-08-21T12:00:00Z"), amount: "35.50" }], rows);
+    expect(unique).toHaveLength(1);
+    expect(unique[0]?.description).toBe("Salário");
+  });
+
+  it("rejects an invalid import payload before database access", async () => {
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.finance.importTransactions({ profileId: 1, rows: [{ date: "2026-08", description: "Inválido", category: "Casa", bank: "Inter", direction: "out", amount: 10 }] })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("returns created and skipped counts for a valid CSV import", async () => {
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.finance.importTransactions({ profileId: 1, rows: [{ date: "2026-08-21", description: "Mercado", category: "Casa", bank: "Inter", direction: "out", amount: 35.5 }] })).resolves.toEqual({ created: 2, skipped: 1 });
   });
 });

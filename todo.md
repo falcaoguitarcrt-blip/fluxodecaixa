@@ -74,3 +74,27 @@
 - [x] Substituir o aviso estático da barra lateral por contagem dinâmica de atrasos e próximos vencimentos.
 - [x] Extrair helper puro para alertas e cobri-lo com teste. A exclusão permanente usa procedimento protegido diretamente no banco e ainda não tem teste de integração.
 - [x] Ajustar o checklist para não declarar cobertura de fluxo de pagamento autenticado sem sessão real.
+
+## Correção reportada e Prioridade 4
+
+- [x] Corrigir o regex do campo `month` no contrato tRPC para aceitar valores como `2026-08`.
+- [x] Validar a correção com check, testes, build e teste do procedimento de rotina com `2026-08`.
+- [x] Definir e implementar a Prioridade 4 após a correção, incluindo importação/exportação CSV e relatório detalhado.
+
+## Prioridade 4 — importação e exportação
+
+- [x] Implementar exportação CSV real dos lançamentos filtrados.
+- [x] Implementar importação CSV com validação de colunas, datas, valores e tipo.
+- [x] Evitar duplicidades e apresentar relatório de linhas importadas e rejeitadas. A interface mostra total processado, criados, duplicados, número da linha, motivo e conteúdo rejeitado.
+- [x] Adicionar testes de parsing, validação, exportação, deduplicação e procedimento protegido de importação; 18 testes passam.
+
+## Fechamento da Prioridade 4 — importação CSV
+
+- [x] Implementar modal/área de relatório com linhas importadas, duplicadas e rejeitadas, incluindo número, motivo e conteúdo.
+- [x] Adicionar testes de deduplicação contra registros existentes e duplicatas dentro do mesmo arquivo.
+- [x] Adicionar teste do procedimento protegido `finance.importTransactions` para payload inválido e validação do retorno de importação; execução contra banco real permanece manual.
+
+## Cobertura final da importação CSV
+
+- [x] Adicionar teste do caminho de sucesso de `finance.importTransactions` com mock/stub, validando `{ created, skipped }`.
+- [x] Manter explícita a verificação manual com banco real e sessão autenticada para a importação completa como etapa opcional do usuário; o código e os testes não simulam essa sessão.
