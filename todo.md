@@ -223,3 +223,13 @@
 - [x] Comparar os contratos tRPC, helpers de banco e cálculos da Home com o comportamento visual da tela.
 - [x] Executar testes e inspeções sem alterar dados persistidos; check e 34 testes passaram.
 - [x] Produzir diagnóstico priorizado com riscos, impactos, correções recomendadas e testes necessários antes de implementar; implementação da Prioridade A aguarda aprovação.
+
+## Prioridade A — calendário e filtragem mensal
+
+- [x] Criar helpers únicos para validar semanticamente `YYYY-MM`, obter a chave mensal de uma data e formatar datas civis sem deslocamento indevido de fuso.
+- [x] Corrigir a tela Contas para calcular vencimentos, pendentes, pagas e atrasadas somente no mês selecionado, sem fallback numérico artificial.
+- [x] Remover mês fixo de agosto de 2026 dos cabeçalhos, seletores e consultas da Sidebar, usando o mês global.
+- [x] Tornar os alertas e o cartão de rotina dependentes do mês global, com distinção clara entre atrasos e próximos vencimentos.
+- [x] Atualizar filtros de lançamentos, investimentos e cartões para usar os helpers de mês e preservar a competência correta.
+- [x] Adicionar testes de mês sem registros, meses anterior/posterior, datas-limite, status e fuso brasileiro.
+- [x] Validar check, testes, build e responsividade sem alterar os dados financeiros existentes.

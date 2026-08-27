@@ -7,6 +7,7 @@ vi.mock("./db", async () => {
 
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
+import { dateKeyFromDate, isValidMonthKey, monthKeyFromDate, monthOptions, monthStartDate } from "../shared/calendar";
 
 function createContext(): TrpcContext {
   return {
@@ -57,12 +58,28 @@ describe("finance procedures", () => {
     const caller = appRouter.createCaller(createContext());
     await expect(caller.finance.routine({ profileId: 1, month: "2026-08" })).resolves.toMatchObject({ budgetSummary: [] });
   });
+
+  it("rejects semantically impossible months", async () => {
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.finance.routine({ profileId: 1, month: "2026-00" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.finance.couple({ month: "2026-13" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
 });
 
 import { buildCardsSummary, buildFinanceSeries, calculateCommitment, filterTransactions, filterBills, filterInvestments, filterCardPurchases, buildBudgetSummary, resolveBillStatus, buildBillAlertSummary, dedupeTransactionRows, restoreFinanceSnapshot, calculateSavingsGoalProgress, assertSavingsGoalProfile, assertSavingsGoalAccess, buildCoupleDashboard, buildCoupleDashboardForUser, buildCardStatementDetails } from "./db";
 import { parseFinanceCsv, serializeFinanceCsv } from "../shared/financeCsv";
 
 describe("finance calculations", () => {
+  it("validates calendar months and preserves civil date keys", () => {
+    expect(isValidMonthKey("2026-08")).toBe(true);
+    expect(isValidMonthKey("2026-00")).toBe(false);
+    expect(isValidMonthKey("2026-13")).toBe(false);
+    expect(dateKeyFromDate("2026-08-31")).toBe("2026-08-31");
+    expect(monthKeyFromDate(new Date("2026-09-01T00:30:00-03:00"))).toBe("2026-09");
+    expect(monthOptions("2026-01", 1)).toEqual(["2025-12", "2026-01", "2026-02"]);
+    expect(monthStartDate("2026-08").toISOString()).toBe("2026-08-01T12:00:00.000Z");
+  });
+
   it("groups card purchases by card and separates installment from total", () => {
     expect(buildCardsSummary([{ id: 1, name: "Inter" }, { id: 2, name: "Rico" }], [
       { cardId: 1, installmentAmount: "25.00", totalAmount: "100.00" },
@@ -141,6 +158,15 @@ describe("finance filters", () => {
     expect(resolveBillStatus({ status: "paid", dueDate: new Date("2026-08-20T12:00:00Z") }, now)).toBe("paid");
   });
 
+  it("scopes bill alerts to the selected month", () => {
+    const alerts = buildBillAlertSummary([
+      { status: "pending" as const, dueDate: new Date("2026-08-20T12:00:00Z") },
+      { status: "pending" as const, dueDate: new Date("2026-09-10T12:00:00Z") },
+    ], new Date("2026-08-27T12:00:00Z"), "2026-08");
+    expect(alerts.overdueBills).toHaveLength(1);
+    expect(alerts.upcomingBills).toHaveLength(0);
+  });
+
   it("builds overdue and upcoming bill alerts in date order", () => {
     const alerts = buildBillAlertSummary([
       { status: "pending" as const, dueDate: new Date("2026-09-10T12:00:00Z") },
@@ -194,6 +220,11 @@ describe("finance filters", () => {
 });
 
 describe("card statement details", () => {
+  it("uses the civil month when a statement reaches a month boundary", () => {
+    const details = buildCardStatementDetails([{ id: 1, name: "Cartão", brand: "Visa", dueDay: 31, closingDay: 20 }], [], "2024-01");
+    expect(details[0]?.dueDate.toISOString()).toBe("2024-02-29T12:00:00.000Z");
+  });
+
   it("derives the statement month, due date, totals and status per card", () => {
     const details = buildCardStatementDetails([
       { id: 1, name: "Inter", brand: "Visa", dueDay: 20, closingDay: 13 },

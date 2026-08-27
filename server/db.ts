@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, bills, cardPurchases, creditCards, financeProfiles, investments, transactions, trashItems, recurringRules, budgets, reminders, financeAuditLogs, financeBackups, savingsGoals, financeCategories } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import type { CsvTransaction } from "../shared/financeCsv";
+import { currentMonthKey, dateKeyFromDate, isDateInMonth, monthStartDate } from "../shared/calendar";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -445,7 +446,7 @@ export function filterTransactions(rows: Array<typeof transactions.$inferSelect>
   return rows.filter((item) => {
     if (filters.bank && item.bank !== filters.bank) return false;
     if (filters.category && item.category !== filters.category) return false;
-    if (filters.month && new Date(item.date).toISOString().slice(0, 7) !== filters.month) return false;
+    if (filters.month && !isDateInMonth(item.date, filters.month)) return false;
     return true;
   });
 }
@@ -455,23 +456,24 @@ export function resolveBillStatus(item: { status: "pending" | "paid" | "late"; d
   return new Date(item.dueDate).getTime() < now.getTime() ? "late" as const : "pending" as const;
 }
 
-export function buildBillAlertSummary<T extends { status: "pending" | "paid" | "late"; dueDate: Date }>(rows: T[], now = new Date()) {
+export function buildBillAlertSummary<T extends { status: "pending" | "paid" | "late"; dueDate: Date }>(rows: T[], now = new Date(), month?: string) {
+  const scopedRows = month ? rows.filter((item) => isDateInMonth(item.dueDate, month)) : rows;
   return {
-    overdueBills: rows.filter((item) => resolveBillStatus(item, now) === "late"),
-    upcomingBills: rows.filter((item) => resolveBillStatus(item, now) === "pending").sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()).slice(0, 5),
+    overdueBills: scopedRows.filter((item) => resolveBillStatus(item, now) === "late"),
+    upcomingBills: scopedRows.filter((item) => resolveBillStatus(item, now) === "pending").sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()).slice(0, 5),
   };
 }
 
 export function filterBills(rows: Array<typeof bills.$inferSelect>, filters: { month?: string; status?: string } = {}, now = new Date()) {
-  return rows.filter((item) => (!filters.status || resolveBillStatus(item, now) === filters.status) && (!filters.month || new Date(item.dueDate).toISOString().slice(0, 7) === filters.month));
+  return rows.filter((item) => (!filters.status || resolveBillStatus(item, now) === filters.status) && (!filters.month || isDateInMonth(item.dueDate, filters.month)));
 }
 
 export function filterInvestments(rows: Array<typeof investments.$inferSelect>, filters: Pick<FinanceFilters, "month" | "bank" | "category"> = {}) {
-  return rows.filter((item) => (!filters.month || new Date(item.investedAt).toISOString().slice(0, 7) === filters.month) && (!filters.bank || item.institution === filters.bank) && (!filters.category || item.category === filters.category));
+  return rows.filter((item) => (!filters.month || isDateInMonth(item.investedAt, filters.month)) && (!filters.bank || item.institution === filters.bank) && (!filters.category || item.category === filters.category));
 }
 
 export function filterCardPurchases(rows: Array<typeof cardPurchases.$inferSelect>, filters: Pick<FinanceFilters, "month" | "cardId"> = {}) {
-  return rows.filter((item) => (!filters.month || new Date(item.purchaseDate).toISOString().slice(0, 7) === filters.month) && (!filters.cardId || item.cardId === filters.cardId));
+  return rows.filter((item) => (!filters.month || isDateInMonth(item.purchaseDate, filters.month)) && (!filters.cardId || item.cardId === filters.cardId));
 }
 
 export async function getFinanceDashboard(userId: number, filters: FinanceFilters = {}) {
@@ -488,7 +490,7 @@ export async function getFinanceDashboard(userId: number, filters: FinanceFilter
   const cardInstallments = cardMonth.reduce((sum, item) => sum + Number(item.installmentAmount), 0);
   const cardTotal = cardMonth.reduce((sum, item) => sum + Number(item.totalAmount), 0);
   const cardsSummary = buildCardsSummary(data.cards, cardMonth);
-  const cardStatements = buildCardStatementDetails(data.cards, cardMonth, filters.month ?? new Date().toISOString().slice(0, 7));
+  const cardStatements = buildCardStatementDetails(data.cards, cardMonth, filters.month ?? currentMonthKey());
   const billsPending = filterBills(data.bills, { month: filters.month }).filter((item) => item.status !== "paid").reduce((sum, item) => sum + Number(item.amount), 0);
   const balance = totals.income - totals.expenses;
   const series = buildFinanceSeries(filteredTransactions);
@@ -497,7 +499,7 @@ export async function getFinanceDashboard(userId: number, filters: FinanceFilter
 
 export function buildFinanceSeries(rows: Array<{ date: Date; direction: "in" | "out"; amount: string | number }>) {
   const map = new Map<string, { income: number; expenses: number }>();
-  for (const item of rows) { const key = new Date(item.date).toISOString().slice(0, 10); const current = map.get(key) ?? { income: 0, expenses: 0 }; if (item.direction === "in") current.income += Number(item.amount); else current.expenses += Number(item.amount); map.set(key, current); }
+  for (const item of rows) { const key = dateKeyFromDate(item.date); const current = map.get(key) ?? { income: 0, expenses: 0 }; if (item.direction === "in") current.income += Number(item.amount); else current.expenses += Number(item.amount); map.set(key, current); }
   return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([date, values]) => ({ date, ...values }));
 }
 
@@ -520,12 +522,13 @@ export type CardStatementDetail = {
 };
 
 export function buildCardStatementDetails(cards: Array<{ id: number; name: string; brand: string; dueDay: number; closingDay: number }>, purchases: Array<{ cardId: number; totalAmount: string | number; installmentAmount: string | number }>, month: string) {
-  const monthStart = new Date(`${month}-01T12:00:00`);
+  const monthStart = monthStartDate(month);
   return cards.map((card): CardStatementDetail => {
     const cardPurchases = purchases.filter((purchase) => purchase.cardId === card.id);
     const dueDate = new Date(monthStart);
-    dueDate.setMonth(dueDate.getMonth() + 1);
-    dueDate.setDate(Math.min(card.dueDay, new Date(dueDate.getFullYear(), dueDate.getMonth() + 1, 0).getDate()));
+    dueDate.setUTCMonth(dueDate.getUTCMonth() + 1);
+    const lastDay = new Date(Date.UTC(dueDate.getUTCFullYear(), dueDate.getUTCMonth() + 1, 0, 12)).getUTCDate();
+    dueDate.setUTCDate(Math.min(card.dueDay, lastDay));
     return { cardId: card.id, cardName: card.name, brand: card.brand, statementMonth: month, closingDay: card.closingDay, dueDay: card.dueDay, dueDate, purchaseCount: cardPurchases.length, installmentAmount: cardPurchases.reduce((sum, purchase) => sum + Number(purchase.installmentAmount), 0), totalAmount: cardPurchases.reduce((sum, purchase) => sum + Number(purchase.totalAmount), 0), status: cardPurchases.length ? "open" : "empty" };
   });
 }
@@ -581,7 +584,7 @@ export function buildCoupleDashboardForUser(userId: number, parts: CoupleSnapsho
   return buildCoupleDashboard(parts.filter((part) => part.userId === undefined || part.userId === userId).filter((part) => part.profileKey === "felipe" || part.profileKey === "sara"));
 }
 
-export async function getCoupleDashboard(userId: number, month = new Date().toISOString().slice(0, 7)) {
+export async function getCoupleDashboard(userId: number, month = currentMonthKey()) {
   const profiles = await ensureFinanceProfiles(userId);
   const parts = await Promise.all(profiles.filter((profile) => profile.profileKey === "felipe" || profile.profileKey === "sara").map(async (profile) => {
     const dashboard = await getFinanceDashboard(userId, { profileId: profile.id, month });
@@ -594,13 +597,13 @@ export async function getCoupleDashboard(userId: number, month = new Date().toIS
 
 export function buildBudgetSummary(budgetRows: Array<{ month: string; category: string; amount: string | number }>, transactionRows: Array<{ date: Date; category: string; direction: "in" | "out"; amount: string | number }>, month: string) {
   return budgetRows.filter((budget) => budget.month === month).map((budget) => {
-    const spent = transactionRows.filter((item) => item.direction === "out" && item.category === budget.category && new Date(item.date).toISOString().slice(0, 7) === month).reduce((sum, item) => sum + Number(item.amount), 0);
+    const spent = transactionRows.filter((item) => item.direction === "out" && item.category === budget.category && isDateInMonth(item.date, month)).reduce((sum, item) => sum + Number(item.amount), 0);
     const limit = Number(budget.amount);
     return { category: budget.category, limit, spent, remaining: Math.max(0, limit - spent), percent: limit > 0 ? Number(Math.min(100, (spent / limit) * 100).toFixed(2)) : 0 };
   });
 }
 
-export async function listRoutineData(userId: number, profileId: number, month = new Date().toISOString().slice(0, 7)) {
+export async function listRoutineData(userId: number, profileId: number, month = currentMonthKey()) {
   const db = await getDb();
   if (!db) return { recurring: [], budgets: [], reminders: [], budgetSummary: [], upcomingBills: [], overdueBills: [] };
   const [recurring, budgetRows, reminderRows, transactionRows, billRows] = await Promise.all([
@@ -610,8 +613,9 @@ export async function listRoutineData(userId: number, profileId: number, month =
     db.select({ date: transactions.date, category: transactions.category, direction: transactions.direction, amount: transactions.amount }).from(transactions).where(and(eq(transactions.userId, userId), eq(transactions.profileId, profileId))),
     db.select().from(bills).where(and(eq(bills.userId, userId), eq(bills.profileId, profileId))).orderBy(desc(bills.dueDate)),
   ]);
-  const { upcomingBills, overdueBills } = buildBillAlertSummary(billRows);
-  return { recurring, budgets: budgetRows, reminders: reminderRows, budgetSummary: buildBudgetSummary(budgetRows, transactionRows, month), upcomingBills, overdueBills };
+  const { upcomingBills, overdueBills } = buildBillAlertSummary(billRows, new Date(), month);
+  const visibleReminders = reminderRows.filter((item) => isDateInMonth(item.dueDate, month));
+  return { recurring, budgets: budgetRows, reminders: visibleReminders, budgetSummary: buildBudgetSummary(budgetRows, transactionRows, month), upcomingBills, overdueBills };
 }
 
 export async function createRecurringRule(input: typeof recurringRules.$inferInsert) {
