@@ -280,3 +280,12 @@
 - [x] Verificar riscos de duplicidade com lançamentos comuns e contas.
 - [x] Executar check, testes e inspeções sem alterar código ou dados financeiros.
 - [x] Produzir diagnóstico priorizado antes de implementar correções.
+
+## Correção de tema claro e contraste AA
+
+- [x] Auditar variáveis de tema e cores fixas na sidebar, cards, gráficos e tabelas.
+- [x] Substituir fundos, textos, bordas e legendas hardcoded por tokens semânticos responsivos.
+- [x] Corrigir sidebar e cards internos: gráfico, resumo do período, Sarinha IA, rotina e comprometimento.
+- [x] Validar cards de KPI, gráfico de barras, Palavra do período, lançamentos, investimentos e cartão nos dois temas.
+- [x] Verificar contraste mínimo AA de textos, valores, uppercase e legendas.
+- [x] Executar testes, check, build e validação desktop/mobile.

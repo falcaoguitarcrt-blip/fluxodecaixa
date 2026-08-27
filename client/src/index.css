@@ -64,11 +64,11 @@ button { cursor: pointer; }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #6eb7ee; outline-offset: 3px; }
 
 .app-shell { min-height: 100vh; background: radial-gradient(circle at 74% -12%, rgba(44, 92, 136, .17), transparent 31rem), #0b131e; color: #edf2f6; }
-.app-shell.light-mode { filter: saturate(.88); background: #dfe6ec; color: #172538; }
-.app-shell.light-mode .main-shell { background: #e7edf2; }
-.app-shell.light-mode .panel, .app-shell.light-mode .welcome-band, .app-shell.light-mode .couple-hero, .app-shell.light-mode .stat-card { background-color: #f4f7f9; color: #172538; box-shadow: 0 14px 38px rgba(31,54,74,.08); }
-.app-shell.light-mode h1, .app-shell.light-mode h2, .app-shell.light-mode strong, .app-shell.light-mode .stat-value { color: #172538; }
-.app-shell.light-mode .text-slate-400, .app-shell.light-mode .text-slate-500 { color: #607182; }
+.app-shell.light-mode { filter: none; background: var(--bg-app); color: var(--text-primary); }
+.app-shell.light-mode .main-shell { background: var(--bg-app); }
+.app-shell.light-mode .panel, .app-shell.light-mode .welcome-band, .app-shell.light-mode .couple-hero, .app-shell.light-mode .stat-card { background-color: var(--bg-surface); color: var(--text-primary); box-shadow: 0 14px 38px color-mix(in srgb, var(--text-primary) 10%, transparent); }
+.app-shell.light-mode h1, .app-shell.light-mode h2, .app-shell.light-mode strong, .app-shell.light-mode .stat-value { color: var(--text-primary); }
+.app-shell.light-mode .text-slate-400, .app-shell.light-mode .text-slate-500 { color: var(--text-secondary); }
 
 .sidebar { position: fixed; z-index: 20; display: flex; width: 258px; min-height: 100vh; flex-direction: column; border-right: 1px solid rgba(104, 145, 176, .24); background: linear-gradient(180deg, #143b63 0%, #113253 43%, #102a46 100%); padding: 34px 22px 23px; }
 .sidebar-divider { height: 1px; margin: 31px 0 27px; background: rgba(181, 216, 235, .22); }
@@ -333,3 +333,308 @@ h2 { margin-bottom: 0; color: #f0f4f5; font-family: 'Playfair Display', serif; f
 .flow-quick-buttons button:nth-child(3) svg { color: #9dccb9; }
 .flow-quick-buttons button:nth-child(4) svg { color: #d4a8dc; }
 @media (max-width: 760px) { .flow-quick-actions { align-items: flex-start; flex-direction: column; gap: 12px; }.flow-quick-buttons { width: 100%; justify-content: flex-start; }.flow-quick-buttons button { flex: 1; justify-content: center; min-width: 0; } }
+
+
+/* Contraste e superfícies semânticas dos temas. Estes tokens substituem as cores
+   de apresentação dos blocos financeiros sem alterar a identidade por perfil. */
+.app-shell {
+  --bg-app: #0b131e;
+  --bg-surface: #1a2532;
+  --bg-surface-raised: #202d3a;
+  --bg-surface-soft: #243442;
+  --text-primary: #f5f7f8;
+  --text-secondary: #c5d0d8;
+  --text-muted: #aebdc8;
+  --text-subtle: #91a5b2;
+  --border: #526777;
+  --border-soft: #3b5262;
+  --control-bg: #142332;
+  --sidebar-bg: linear-gradient(180deg, #143b63 0%, #113253 43%, #102a46 100%);
+  --sidebar-border: #52748b;
+  --sidebar-active: #244f72;
+  --sidebar-hover: #1d405d;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+}
+
+.app-shell.light-mode {
+  --bg-app: #e8eef2;
+  --bg-surface: #ffffff;
+  --bg-surface-raised: #f8fafb;
+  --bg-surface-soft: #edf3f6;
+  --text-primary: #172538;
+  --text-secondary: #34495b;
+  --text-muted: #4c6374;
+  --text-subtle: #5d7281;
+  --border: #aebdc7;
+  --border-soft: #c7d2d9;
+  --control-bg: #ffffff;
+  --sidebar-bg: linear-gradient(180deg, #f8fbfc 0%, #eef4f7 52%, #e4edf2 100%);
+  --sidebar-border: #a9bcc8;
+  --sidebar-active: #d9eaf4;
+  --sidebar-hover: #e9f2f6;
+  filter: none;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+}
+
+/* Shell, sidebar e navegação */
+.app-shell .main-shell { background: var(--bg-app); color: var(--text-primary); }
+.app-shell .sidebar {
+  border-right-color: var(--sidebar-border);
+  background: var(--sidebar-bg);
+  color: var(--text-primary);
+}
+.app-shell .sidebar-divider { background: var(--border-soft); }
+.app-shell .sidebar-period { border-bottom-color: var(--border-soft); }
+.app-shell .sidebar .eyebrow,
+.app-shell .sidebar-updated,
+.app-shell .profile-switch button { color: var(--text-secondary); }
+.app-shell .sidebar-month,
+.app-shell .sidebar-tip strong { color: var(--text-primary); }
+.app-shell .desktop-nav button { color: var(--text-secondary); }
+.app-shell .desktop-nav button:hover { background: var(--sidebar-hover); color: var(--text-primary); }
+.app-shell .desktop-nav button.active {
+  border-color: var(--border);
+  background: var(--sidebar-active);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+.app-shell .sidebar-tip {
+  border-color: var(--border-soft);
+  background: var(--bg-surface-soft);
+}
+.app-shell .sidebar-tip span { color: var(--text-muted); }
+.app-shell .profile-switch button.active {
+  border-color: var(--border);
+  background: var(--sidebar-active);
+  color: var(--text-primary);
+}
+
+/* Cards internos e superfícies financeiras */
+.app-shell .panel,
+.app-shell .stat-card,
+.app-shell .couple-hero,
+.app-shell .couple-detail-card,
+.app-shell .word-day-card,
+.app-shell .assistant-card,
+.app-shell .card-detail,
+.app-shell .savings-goals-card {
+  border-color: var(--border-soft);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: 0 16px 34px color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+.app-shell .stat-card,
+.app-shell .panel h2,
+.app-shell .panel h3,
+.app-shell .couple-hero h2,
+.app-shell .stat-value,
+.app-shell .statement-total strong,
+.app-shell .card-detail-total,
+.app-shell .couple-detail-value,
+.app-shell .person-value,
+.app-shell .bill-row > strong,
+.app-shell .table-row strong { color: var(--text-primary); }
+.app-shell .eyebrow,
+.app-shell .panel .eyebrow,
+.app-shell .legend,
+.app-shell .chart-y,
+.app-shell .chart-x,
+.app-shell .mini-stat p,
+.app-shell .card-detail-meta,
+.app-shell .couple-detail-card > p:last-child,
+.app-shell .empty-inline,
+.app-shell .word-day-intro,
+.app-shell .person-tag { color: var(--text-muted); }
+.app-shell .chart-area {
+  border-bottom-color: var(--border-soft);
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent 55px, color-mix(in srgb, var(--border) 35%, transparent) 56px);
+}
+.app-shell .commitment-track { background: color-mix(in srgb, var(--border) 35%, transparent); }
+.app-shell .trend-pill { color: #216d51; background: #d8f1e6; }
+.app-shell:not(.light-mode) .trend-pill { color: #b9ead0; background: #24483d; }
+.app-shell .inline-link { color: #236b95; }
+.app-shell .inline-link:hover { color: #124b6d; }
+.app-shell:not(.light-mode) .inline-link { color: #b7dbed; }
+.app-shell:not(.light-mode) .inline-link:hover { color: #e0f3ff; }
+
+/* Palavra do período, Sarinha IA e controles internos */
+.app-shell .word-day-copy { color: var(--text-primary); }
+.app-shell .word-day-intro { color: var(--text-secondary); }
+.app-shell .word-day-card blockquote {
+  border-color: var(--border-soft);
+  background: var(--bg-surface-soft);
+  color: var(--text-primary);
+}
+.app-shell .word-day-card cite { color: var(--text-muted); }
+.app-shell .assistant-card {
+  background: linear-gradient(145deg, var(--bg-surface-raised), var(--bg-surface));
+}
+.app-shell .assistant-card:after { background: color-mix(in srgb, #5cb6d9 14%, transparent); }
+.app-shell .assistant-orb { background: color-mix(in srgb, var(--text-primary) 12%, transparent); }
+.app-shell .assistant-action {
+  border-top-color: var(--border-soft);
+  color: var(--text-secondary);
+}
+.app-shell .assistant-action:hover { color: var(--text-primary); }
+.app-shell .search-wrap,
+.app-shell .filter-bar,
+.app-shell .segmented,
+.app-shell .institution-strip {
+  border-color: var(--border-soft);
+  background: var(--bg-surface-soft);
+  color: var(--text-secondary);
+}
+.app-shell .search-wrap input { color: var(--text-primary); }
+.app-shell .search-wrap input::placeholder { color: var(--text-subtle); }
+.app-shell .filter-bar .filter-title { color: var(--text-secondary); }
+.app-shell .institution-strip > div { color: var(--text-secondary); }
+.app-shell .institution-strip strong { color: var(--text-primary); }
+
+/* Lançamentos, Contas, Investimentos e tabelas */
+.app-shell .transaction-list,
+.app-shell .table-panel,
+.app-shell .bills-panel,
+.app-shell .card-statement {
+  border-color: var(--border-soft);
+  background: var(--bg-surface);
+}
+.app-shell .transaction-row,
+.app-shell .table-row,
+.app-shell .statement-row,
+.app-shell .bill-row {
+  border-bottom-color: var(--border-soft);
+  color: var(--text-secondary);
+}
+.app-shell .transaction-row:nth-child(even),
+.app-shell .table-row.table-header,
+.app-shell .statement-head,
+.app-shell .list-head { background: var(--bg-surface-soft); }
+.app-shell .transaction-row:hover,
+.app-shell .transaction-row:nth-child(even):hover,
+.app-shell .selected-row { background: var(--sidebar-hover); }
+.app-shell .table-row.table-header,
+.app-shell .statement-head,
+.app-shell .list-head { color: var(--text-secondary); }
+.app-shell .statement-total { border-top-color: var(--border-soft); }
+.app-shell .statement-total .inline-link { color: var(--text-secondary); }
+.app-shell .edit-link,
+.app-shell .sort-badge { color: #28688b; }
+.app-shell:not(.light-mode) .edit-link,
+.app-shell:not(.light-mode) .sort-badge { color: #a9cde0; }
+.app-shell .checkbox {
+  border-color: var(--border);
+  background: var(--bg-surface-soft);
+}
+.app-shell .status.pending { color: #8a6200; }
+.app-shell:not(.light-mode) .status.pending { color: #e7d28d; }
+.app-shell .segmented button { color: var(--text-secondary); }
+.app-shell .segmented button.active { color: #ffffff; }
+
+/* Caixinhas e métricas acumuladas */
+.app-shell .goal-metrics > div,
+.app-shell .goal-row { border-color: var(--border-soft); background: var(--bg-surface-soft); }
+.app-shell .goal-metrics span,
+.app-shell .goal-row-top span,
+.app-shell .goal-row-bottom span,
+.app-shell .goal-archived-note { color: var(--text-muted); }
+.app-shell .goal-metrics strong,
+.app-shell .goal-row-top strong,
+.app-shell .goal-row-bottom strong,
+.app-shell .goal-empty strong { color: var(--text-primary); }
+.app-shell .goal-empty { border-top-color: var(--border-soft); }
+.app-shell .goal-empty p { color: var(--text-muted); }
+
+/* Campos de modais e foco permanecem legíveis nos dois temas. */
+.app-shell.light-mode .modal-card,
+.app-shell.light-mode .header-settings-panel,
+.app-shell.light-mode .transaction-context-menu {
+  border-color: var(--border);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+.app-shell.light-mode .modal-form input,
+.app-shell.light-mode .modal-form select,
+.app-shell.light-mode .category-create-row select,
+.app-shell.light-mode .category-create-row input,
+.app-shell.light-mode .category-row input {
+  border-color: var(--border);
+  background: var(--bg-surface-soft);
+  color: var(--text-primary);
+}
+.app-shell.light-mode .modal-form label,
+.app-shell.light-mode .header-settings-panel label,
+.app-shell.light-mode .transaction-context-menu button,
+.app-shell.light-mode .category-row { color: var(--text-secondary); }
+.app-shell.light-mode .modal-footer { border-top-color: var(--border-soft); }
+.app-shell.light-mode .modal-footer .text-slate-400 { color: var(--text-secondary); }
+
+/* Ações de topo e cabeçalho mobile seguem os mesmos tokens. */
+.app-shell .desktop-topbar,
+.app-shell .topbar-link,
+.app-shell .workspace-title p { color: var(--text-muted); }
+.app-shell .topbar-link:hover { color: var(--text-primary); }
+.app-shell .workspace-top-controls select,
+.app-shell .header-tool,
+.app-shell .edit-context,
+.app-shell .period-select,
+.app-shell .period-btn,
+.app-shell .profile-pills { border-color: var(--border-soft); background: var(--bg-surface-soft); color: var(--text-secondary); }
+.app-shell .profile-pills button { color: var(--text-secondary); }
+.app-shell .profile-pills button:hover,
+.app-shell .profile-pills button.active { color: var(--text-primary); }
+.app-shell .mobile-header { border-bottom-color: var(--border-soft); background: color-mix(in srgb, var(--bg-app) 92%, transparent); }
+.app-shell .mobile-header .header-icon { border-color: var(--border-soft); background: var(--bg-surface-soft); color: var(--text-secondary); }
+.app-shell.light-mode .action-ghost { background: var(--bg-surface); color: var(--text-secondary); }
+
+@media (prefers-contrast: more) {
+  .app-shell { --border: #6b8291; --border-soft: #78909d; }
+  .app-shell.light-mode { --border: #718794; --border-soft: #879aa5; }
+}
+
+
+/* O modo claro tem precedência sobre a identidade cromática da sidebar por perfil. */
+.app-shell.light-mode.profile-sara .sidebar,
+.app-shell.light-mode.profile-casal .sidebar {
+  border-right-color: var(--sidebar-border);
+  background: var(--sidebar-bg);
+}
+.app-shell.light-mode.profile-sara .desktop-nav button.active,
+.app-shell.light-mode.profile-casal .desktop-nav button.active {
+  border-color: var(--border);
+  background: var(--sidebar-active);
+  color: var(--text-primary);
+}
+
+
+/* Cobertura final dos componentes de rotina, estados vazios e utilitários usados no JSX. */
+.app-shell .routine-panel .routine-row,
+.app-shell .routine-panel .routine-budget,
+.app-shell .governance-panel,
+.app-shell .flow-quick-actions {
+  border-color: var(--border-soft);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+.app-shell .routine-panel .routine-row span,
+.app-shell .routine-panel .routine-budget span,
+.app-shell .flow-quick-copy,
+.app-shell .governance-row,
+.app-shell .governance-row small,
+.app-shell .empty-state p,
+.app-shell .empty-copy { color: var(--text-muted); }
+.app-shell .routine-panel .routine-row strong,
+.app-shell .routine-panel .routine-budget strong,
+.app-shell .governance-row strong { color: var(--text-primary); }
+.app-shell .governance-panel h2 { color: var(--text-primary); }
+.app-shell .flow-quick-buttons button {
+  border-color: var(--border-soft);
+  background: var(--bg-surface-soft);
+  color: var(--text-secondary);
+}
+.app-shell .flow-quick-buttons button:hover { color: var(--text-primary); }
+.app-shell.light-mode .text-slate-200 { color: var(--text-secondary); }
+.app-shell.light-mode .text-slate-400,
+.app-shell.light-mode .text-slate-500 { color: var(--text-secondary); }
+.app-shell.light-mode .governance-panel { background: var(--bg-surface); }
