@@ -377,11 +377,11 @@
 
 ## Backup inicial no GitHub
 
-- [ ] Criar o repositório privado `felipesilva/fluxo-pessoal`.
-- [ ] Configurar o remote Git local para o repositório GitHub privado.
-- [ ] Fazer o primeiro commit de backup sem apagar arquivos ou dados.
-- [ ] Enviar o commit para a branch principal e verificar sincronização.
-- [ ] Registrar o protocolo permanente de pré-commit e pós-commit.
+- [x] Item substituído: o repositório efetivo foi definido pelo usuário como `falcaoguitarcrt-blip/fluxodecaixa`.
+- [x] Item substituído: o remote `github` foi configurado para `falcaoguitarcrt-blip/fluxodecaixa`, preservando `origin`.
+- [x] Item substituído: o backup inicial foi criado localmente no commit `39dd44b`, sem apagar arquivos ou dados.
+- [x] Item substituído: o commit de backup foi enviado para `main` do repositório efetivo.
+- [x] Item substituído: o protocolo permanente está registrado na seção de proteção do repositório efetivo.
 
 ## Proteção do repositório autorizado pelo usuário
 
