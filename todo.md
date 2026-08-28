@@ -369,11 +369,11 @@
 
 ## Proteção contra perda de dados e sincronização GitHub
 
-- [ ] Inspecionar o conector/configuração GitHub e o repositório remoto associado.
-- [ ] Confirmar nome, proprietário, branch e estado de sincronização do repositório real.
-- [ ] Registrar protocolo obrigatório de pré-commit e pós-commit para mudanças estruturais.
-- [ ] Documentar a exigência de confirmação explícita antes de exclusões ou ações potencialmente irreversíveis.
-- [ ] Entregar ressalvas caso o vínculo GitHub não esteja ativo ou o nome informado seja apenas um marcador.
+- [x] Inspecionar o conector/configuração GitHub e o repositório remoto associado.
+- [x] Confirmar nome, proprietário, branch e estado de sincronização do repositório real.
+- [x] Registrar protocolo obrigatório de pré-commit e pós-commit para mudanças estruturais.
+- [x] Documentar a exigência de confirmação explícita antes de exclusões ou ações potencialmente irreversíveis.
+- [x] Entregar ressalvas caso o vínculo GitHub não esteja ativo ou o nome informado seja apenas um marcador.
 
 ## Backup inicial no GitHub
 
@@ -382,3 +382,11 @@
 - [ ] Fazer o primeiro commit de backup sem apagar arquivos ou dados.
 - [ ] Enviar o commit para a branch principal e verificar sincronização.
 - [ ] Registrar o protocolo permanente de pré-commit e pós-commit.
+
+## Proteção do repositório autorizado pelo usuário
+
+- [x] Tornar `falcaoguitarcrt-blip/fluxodecaixa` privado.
+- [x] Configurar o remote GitHub correto sem remover o histórico local.
+- [x] Enviar o commit de backup `39dd44b` para a branch principal.
+- [x] Confirmar que local e remoto estão sincronizados.
+- [x] Registrar o protocolo de pré-commit, pós-commit e confirmação de reversibilidade.
